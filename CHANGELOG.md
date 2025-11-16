@@ -5,6 +5,82 @@ All notable changes to StrandKit will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-11-16
+
+### Added
+
+#### S3 & Storage Tools (5 new tools)
+- **`analyze_s3_bucket()`** - Comprehensive S3 bucket analysis
+  - Security settings (encryption, public access block, ACLs, policies)
+  - Storage metrics (size, object count, storage class distribution)
+  - Configuration (versioning, lifecycle, replication, logging)
+  - Cost estimation
+  - Risk assessment (critical/high/medium/low)
+  - Optimization recommendations
+  - Tested: Analyzed 10 buckets, found 2 public buckets with critical risk
+
+- **`find_public_buckets()`** - Account-wide public bucket scanner
+  - Scans all S3 buckets for public access
+  - Checks public access block settings
+  - Analyzes bucket ACLs for public grants
+  - Parses bucket policies for public statements
+  - Risk classification by severity
+  - Tested: Found 2 critical public buckets in live account
+
+- **`get_s3_cost_analysis()`** - S3 cost optimization
+  - Total S3 costs from Cost Explorer
+  - Cost breakdown by bucket (top 20)
+  - Storage class distribution
+  - Lifecycle policy recommendations
+  - Intelligent-Tiering candidates
+  - Potential savings calculation
+  - Tested: Analyzed $0.92 monthly S3 spend
+
+- **`analyze_bucket_access()`** - Access logging analysis
+  - Server access logging status
+  - CloudTrail data events integration
+  - Access pattern insights
+  - Security recommendations
+  - Tested: Identified buckets without logging enabled
+
+- **`find_unused_buckets()`** - Identify storage waste
+  - Empty bucket detection
+  - Old-only bucket identification (90+ days)
+  - Cost savings estimation
+  - Cleanup recommendations
+  - Tested: Found 4 empty buckets, 1 old-only bucket
+
+### Changed
+- **Version bump** from 0.3.0 to 0.4.0
+- **README.md** - Added S3 tools section with examples
+- **Package exports** - Added 5 S3 tools to `__init__.py` exports
+- **Tool count** - Increased from 19 to 24 tools (+26%)
+
+### Documentation
+- Updated **README.md** - Added S3 security and cost examples
+- Updated **TOOLS.md** - Added complete API reference for 5 S3 tools
+- Updated **CHANGELOG.md** - Added v0.4.0 release notes
+- Updated **PROJECT_STATUS.md** - Reflects Phase 4 complete
+- Created **examples/test_s3_tools.py** (400+ lines)
+
+### Testing
+- ✅ Live AWS testing with account 227272756319
+- ✅ Found 2 public buckets (CRITICAL security issue)
+- ✅ Identified 4 empty buckets for cleanup
+- ✅ Scanned 10 buckets successfully
+- ✅ Cost analysis validated ($0.92 S3 spend)
+- ✅ All imports verified working
+- ✅ Zero errors in production testing
+
+### Statistics
+- **Code**: ~1,100 lines added to s3.py
+- **Total tools**: 24 (was 19)
+- **New module**: s3.py with 5 functions + 10 helper functions
+- **Documentation**: 100% coverage maintained
+- **Test file**: examples/test_s3_tools.py (400+ lines)
+
+---
+
 ## [0.3.0] - 2025-11-16
 
 ### Added

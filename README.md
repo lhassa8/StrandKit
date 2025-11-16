@@ -72,6 +72,15 @@ Think of it as the **developer experience layer** for AWS Strands Agents:
 | **`analyze_security_group`** | Analyze security group rules with risk assessment | ✅ Working |
 | **`find_overpermissive_security_groups`** | Scan all security groups for security risks | ✅ Working |
 
+#### S3 & Storage Tools
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`analyze_s3_bucket`** | Comprehensive bucket analysis (security, cost, config) | ✅ Working |
+| **`find_public_buckets`** | Scan all buckets for public access risks | ✅ Working |
+| **`get_s3_cost_analysis`** | Storage cost breakdown and optimization opportunities | ✅ Working |
+| **`analyze_bucket_access`** | Access logging and CloudTrail integration status | ✅ Working |
+| **`find_unused_buckets`** | Identify empty or rarely used buckets | ✅ Working |
+
 ### Agent Templates (Coming Soon)
 
 | Agent | Description | Status |
@@ -251,6 +260,43 @@ print(f"Unused Elastic IPs: {unused['unused_elastic_ips_count']}")
 print(f"Old Snapshots (>90 days): {unused['old_snapshots_count']}")
 ```
 
+#### Find Public S3 Buckets
+```python
+from strandkit import find_public_buckets, analyze_s3_bucket
+
+# Scan all buckets for public access
+scan = find_public_buckets()
+print(f"Total buckets: {scan['summary']['total_buckets']}")
+print(f"🔴 Public buckets: {scan['summary']['public_buckets']}")
+print(f"🔴 Critical risks: {scan['summary']['critical']}")
+
+# Analyze risky buckets
+for bucket in scan['public_buckets']:
+    if bucket['risk_level'] == 'critical':
+        details = analyze_s3_bucket(bucket['bucket_name'])
+        print(f"\n🔴 {bucket['bucket_name']}:")
+        print(f"  Encryption: {'✅' if details['security']['encryption']['enabled'] else '❌'}")
+        for reason in bucket['public_reason']:
+            print(f"  - {reason}")
+```
+
+#### S3 Cost Optimization
+```python
+from strandkit import find_unused_buckets, get_s3_cost_analysis
+
+# Find empty or unused buckets
+unused = find_unused_buckets(min_age_days=90)
+print(f"Empty buckets: {len(unused['empty_buckets'])}")
+print(f"Potential savings: ${unused['potential_savings']:.2f}/month")
+
+# Get cost breakdown
+costs = get_s3_cost_analysis(days_back=30)
+print(f"\nTotal S3 cost: ${costs['total_cost']:.2f}")
+print(f"Top buckets:")
+for bucket in costs['by_bucket'][:5]:
+    print(f"  {bucket['bucket_name']}: ${bucket['estimated_monthly_cost']:.2f}/month")
+```
+
 ## Documentation
 
 ### Core Components
@@ -380,7 +426,7 @@ strandkit/
 
 ## Development Status
 
-**Current Version:** 0.3.0
+**Current Version:** 0.4.0
 
 ✅ **Complete:**
 - AWS Client wrapper
@@ -389,8 +435,9 @@ strandkit/
 - **IAM tools** - Role analysis, policy explanation, security scanning (3 tools)
 - **Cost Explorer tools** - Usage analysis, forecasting, anomaly detection (4 tools)
 - **EC2 & Compute tools** - Instance analysis, security groups, resource optimization (5 tools)
+- **S3 & Storage tools** - Bucket security, public access detection, cost optimization (5 tools)
 - Comprehensive documentation and examples
-- **19 production-ready tools** tested with real AWS accounts
+- **24 production-ready tools** tested with real AWS accounts
 
 🚧 **In Progress:**
 - Agent framework (pending AWS Strands integration)

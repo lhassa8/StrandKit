@@ -8,6 +8,7 @@ This package contains Strands-compatible tools for AWS services:
 - iam: IAM policy analysis and security auditing
 - cost: Cost Explorer for spending analysis and forecasting
 - ec2: EC2 instance and security group analysis
+- s3: S3 bucket security and cost optimization
 
 All tools follow consistent patterns:
 - Accept simple, well-typed parameters
@@ -33,6 +34,13 @@ from strandkit.tools.ec2 import (
     analyze_security_group,
     find_overpermissive_security_groups
 )
+from strandkit.tools.s3 import (
+    analyze_s3_bucket,
+    find_public_buckets,
+    get_s3_cost_analysis,
+    analyze_bucket_access,
+    find_unused_buckets
+)
 
 __all__ = [
     # CloudWatch
@@ -57,4 +65,10 @@ __all__ = [
     "find_unused_resources",
     "analyze_security_group",
     "find_overpermissive_security_groups",
+    # S3
+    "analyze_s3_bucket",
+    "find_public_buckets",
+    "get_s3_cost_analysis",
+    "analyze_bucket_access",
+    "find_unused_buckets",
 ]
