@@ -36,6 +36,39 @@ StrandKit is a Python toolkit for AWS cloud analysis and optimization. It provid
 - **Actionable insights** - Every tool provides specific recommendations, not just raw data
 - **Cost-focused** - Built-in cost calculations and savings estimates for optimization opportunities
 
+## Why StrandKit?
+
+**The Problem:**
+Managing AWS at scale is hard. Finding cost waste requires checking multiple services (EC2, EBS, S3, Load Balancers). Security audits mean manually reviewing hundreds of IAM roles and policies. Performance issues need correlating CloudWatch metrics across instances. The AWS console and CLI are great for individual resources, but terrible for analysis across your entire infrastructure.
+
+**The Solution:**
+StrandKit does the heavy lifting for you. Instead of writing the same boto3 code over and over, or clicking through dozens of console pages, you call a single Python function. StrandKit queries the AWS APIs, aggregates data from multiple sources, analyzes patterns, calculates costs, and gives you specific recommendations.
+
+**How It Works:**
+1. **You call a function** - Simple Python API, pass in basic parameters (or none for account-wide scans)
+2. **StrandKit queries AWS** - Uses boto3 to fetch data from CloudWatch, Cost Explorer, EC2, IAM, S3, etc.
+3. **Data gets analyzed** - Correlates information, detects patterns, calculates metrics and costs
+4. **You get actionable results** - Structured JSON with findings, recommendations, and cost estimates
+
+**Example:**
+```python
+# Instead of this (50+ lines of boto3 code):
+# - List all IAM roles
+# - Get policies for each role
+# - Parse JSON policies
+# - Check for wildcards and admin access
+# - Assess trust relationships
+# - Generate risk scores
+# - Format results...
+
+# You do this (1 line):
+from strandkit import find_overpermissive_roles
+risky_roles = find_overpermissive_roles()
+print(f"Found {risky_roles['summary']['high_risk']} high-risk roles")
+```
+
+No infrastructure to deploy. No configuration files. No learning curve. Just import and run.
+
 ## Features
 
 ### AWS Tools (Production Ready ✅)
