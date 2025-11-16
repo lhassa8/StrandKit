@@ -4,6 +4,8 @@ CloudWatch tools for StrandKit.
 This module provides tools for querying CloudWatch Logs and Metrics:
 - get_lambda_logs: Retrieve and parse Lambda function logs
 - get_metric: Query CloudWatch metrics with automatic statistics
+- get_log_insights: Run CloudWatch Logs Insights queries for advanced log analysis
+- get_recent_errors: Quick helper to find recent errors across log groups
 
 All tools return structured JSON that's easy for LLMs to process.
 """

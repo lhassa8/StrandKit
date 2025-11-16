@@ -35,11 +35,33 @@ Think of it as the **developer experience layer** for AWS Strands Agents:
 
 ### AWS Tools (Production Ready ✅)
 
+#### CloudWatch Tools
 | Tool | Description | Status |
 |------|-------------|--------|
 | **`get_lambda_logs`** | Retrieve and parse Lambda CloudWatch logs | ✅ Working |
 | **`get_metric`** | Query CloudWatch metrics with statistics | ✅ Working |
-| **`explain_changeset`** | Analyze CloudFormation changesets with risk assessment | ✅ Working |
+| **`get_log_insights`** | Run advanced Logs Insights queries | ✅ Working |
+| **`get_recent_errors`** | Find recent errors across log groups | ✅ Working |
+
+#### CloudFormation Tools
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`explain_changeset`** | Analyze changesets with risk assessment | ✅ Working |
+
+#### IAM Tools
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`analyze_role`** | Analyze IAM role permissions and security risks | ✅ Working |
+| **`explain_policy`** | Explain IAM policies in plain English | ✅ Working |
+| **`find_overpermissive_roles`** | Scan all roles for security issues | ✅ Working |
+
+#### Cost Explorer Tools
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`get_cost_and_usage`** | Get cost data for any time period | ✅ Working |
+| **`get_cost_by_service`** | Break down costs by AWS service | ✅ Working |
+| **`detect_cost_anomalies`** | Find unusual spending patterns | ✅ Working |
+| **`get_cost_forecast`** | Forecast future AWS costs | ✅ Working |
 
 ### Agent Templates (Coming Soon)
 
@@ -265,14 +287,16 @@ strandkit/
 
 ## Development Status
 
-**Current Version:** 0.1.0 (MVP)
+**Current Version:** 0.2.0
 
 ✅ **Complete:**
 - AWS Client wrapper
-- CloudWatch Logs tool (`get_lambda_logs`)
-- CloudWatch Metrics tool (`get_metric`)
-- CloudFormation changeset analyzer (`explain_changeset`)
+- **CloudWatch tools** - Logs, Metrics, Insights queries, error detection
+- **CloudFormation tools** - Changeset analysis with risk assessment
+- **IAM tools** - Role analysis, policy explanation, security scanning
+- **Cost Explorer tools** - Usage analysis, forecasting, anomaly detection
 - Comprehensive documentation and examples
+- **14 production-ready tools** tested with real AWS accounts
 
 🚧 **In Progress:**
 - Agent framework (pending AWS Strands integration)
