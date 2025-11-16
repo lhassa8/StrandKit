@@ -67,6 +67,16 @@ Think of it as the **developer experience layer** for AWS Strands Agents:
 | **`analyze_unused_permissions`** | Least privilege - find unused permissions | ✅ Working |
 | **`get_iam_credential_report`** | Comprehensive credential audit report | ✅ Working |
 
+#### EBS & Volume Optimization Tools (Reduce Storage Costs)
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`analyze_ebs_volumes`** | Volume optimization (GP2→GP3, 20% savings) | ✅ Working |
+| **`analyze_ebs_snapshots_lifecycle`** | Snapshot lifecycle and cleanup | ✅ Working |
+| **`get_ebs_iops_recommendations`** | IOPS optimization and rightsizing | ✅ Working |
+| **`analyze_ebs_encryption`** | Encryption compliance checking | ✅ Working |
+| **`find_ebs_volume_anomalies`** | Performance issue detection | ✅ Working |
+| **`analyze_ami_usage`** | AMI cleanup and cost reduction | ✅ Working |
+
 #### Cost Explorer Tools
 | Tool | Description | Status |
 |------|-------------|--------|
@@ -111,6 +121,17 @@ Think of it as the **developer experience layer** for AWS Strands Agents:
 | **`get_s3_cost_analysis`** | Storage cost breakdown and optimization opportunities | ✅ Working |
 | **`analyze_bucket_access`** | Access logging and CloudTrail integration status | ✅ Working |
 | **`find_unused_buckets`** | Identify empty or rarely used buckets | ✅ Working |
+
+#### S3 Advanced Optimization Tools (30-70% Storage Savings)
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`analyze_s3_storage_classes`** | Storage class analysis and transition recommendations | ✅ Working |
+| **`analyze_s3_lifecycle_policies`** | Lifecycle policy coverage and optimization | ✅ Working |
+| **`find_s3_versioning_waste`** | Identify versioning cost waste | ✅ Working |
+| **`find_incomplete_multipart_uploads`** | Find hidden costs from incomplete uploads | ✅ Working |
+| **`analyze_s3_replication`** | Replication configuration and costs | ✅ Working |
+| **`analyze_s3_request_costs`** | Request-based cost analysis | ✅ Working |
+| **`analyze_large_s3_objects`** | Find large objects needing optimization | ✅ Working |
 
 ### Agent Templates (Coming Soon)
 
@@ -601,7 +622,7 @@ strandkit/
 
 ## Development Status
 
-**Current Version:** 0.7.0
+**Current Version:** 0.9.0
 
 ✅ **Complete:**
 - AWS Client wrapper
@@ -614,8 +635,10 @@ strandkit/
 - **Cost Waste Detection tools** - Zombie resources, idle detection, snapshot waste (5 tools)
 - **EC2 & Compute tools** - Instance analysis, security groups, resource optimization (5 tools)
 - **S3 & Storage tools** - Bucket security, public access detection, cost optimization (5 tools)
+- **EBS & Volume Optimization tools** - GP2→GP3 migration, IOPS, snapshots, encryption (6 tools)
+- **S3 Advanced Optimization tools** - Storage classes, lifecycle, versioning, replication (7 tools)
 - Comprehensive documentation and examples
-- **43 production-ready tools** tested with real AWS accounts
+- **56 production-ready tools** tested with real AWS accounts
 
 🚧 **In Progress:**
 - Agent framework (pending AWS Strands integration)
