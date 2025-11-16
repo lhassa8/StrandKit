@@ -17,7 +17,7 @@ Example usage:
 For more information, see: https://github.com/yourusername/strandkit
 """
 
-__version__ = "0.4.0"
+__version__ = "0.6.0"
 __author__ = "Your Name"
 
 # Import main agent templates for easy access
@@ -33,6 +33,21 @@ from strandkit.tools.cost import (
     get_cost_by_service,
     detect_cost_anomalies,
     get_cost_forecast
+)
+from strandkit.tools.cost_analytics import (
+    get_budget_status,
+    analyze_reserved_instances,
+    analyze_savings_plans,
+    get_rightsizing_recommendations,
+    analyze_commitment_savings,
+    find_cost_optimization_opportunities
+)
+from strandkit.tools.cost_waste import (
+    find_zombie_resources,
+    analyze_idle_resources,
+    analyze_snapshot_waste,
+    analyze_data_transfer_costs,
+    get_cost_allocation_tags
 )
 from strandkit.tools.ec2 import (
     analyze_ec2_instance,
@@ -68,6 +83,19 @@ __all__ = [
     "get_cost_by_service",
     "detect_cost_anomalies",
     "get_cost_forecast",
+    # Cost Analytics tools
+    "get_budget_status",
+    "analyze_reserved_instances",
+    "analyze_savings_plans",
+    "get_rightsizing_recommendations",
+    "analyze_commitment_savings",
+    "find_cost_optimization_opportunities",
+    # Cost Waste Detection tools
+    "find_zombie_resources",
+    "analyze_idle_resources",
+    "analyze_snapshot_waste",
+    "analyze_data_transfer_costs",
+    "get_cost_allocation_tags",
     # EC2 tools
     "analyze_ec2_instance",
     "get_ec2_inventory",

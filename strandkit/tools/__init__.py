@@ -7,6 +7,7 @@ This package contains Strands-compatible tools for AWS services:
 - cloudformation: CloudFormation changeset analysis
 - iam: IAM policy analysis and security auditing
 - cost: Cost Explorer for spending analysis and forecasting
+- cost_analytics: Advanced cost optimization (RI/SP, rightsizing, budgets)
 - ec2: EC2 instance and security group analysis
 - s3: S3 bucket security and cost optimization
 
@@ -26,6 +27,21 @@ from strandkit.tools.cost import (
     get_cost_by_service,
     detect_cost_anomalies,
     get_cost_forecast
+)
+from strandkit.tools.cost_analytics import (
+    get_budget_status,
+    analyze_reserved_instances,
+    analyze_savings_plans,
+    get_rightsizing_recommendations,
+    analyze_commitment_savings,
+    find_cost_optimization_opportunities
+)
+from strandkit.tools.cost_waste import (
+    find_zombie_resources,
+    analyze_idle_resources,
+    analyze_snapshot_waste,
+    analyze_data_transfer_costs,
+    get_cost_allocation_tags
 )
 from strandkit.tools.ec2 import (
     analyze_ec2_instance,
@@ -59,6 +75,19 @@ __all__ = [
     "get_cost_by_service",
     "detect_cost_anomalies",
     "get_cost_forecast",
+    # Cost Analytics
+    "get_budget_status",
+    "analyze_reserved_instances",
+    "analyze_savings_plans",
+    "get_rightsizing_recommendations",
+    "analyze_commitment_savings",
+    "find_cost_optimization_opportunities",
+    # Cost Waste Detection
+    "find_zombie_resources",
+    "analyze_idle_resources",
+    "analyze_snapshot_waste",
+    "analyze_data_transfer_costs",
+    "get_cost_allocation_tags",
     # EC2
     "analyze_ec2_instance",
     "get_ec2_inventory",

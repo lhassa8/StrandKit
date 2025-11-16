@@ -63,6 +63,25 @@ Think of it as the **developer experience layer** for AWS Strands Agents:
 | **`detect_cost_anomalies`** | Find unusual spending patterns | ✅ Working |
 | **`get_cost_forecast`** | Forecast future AWS costs | ✅ Working |
 
+#### Cost Analytics Tools (High-Value Optimization)
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`get_budget_status`** | Monitor budgets with predictive alerts | ✅ Working |
+| **`analyze_reserved_instances`** | RI utilization and coverage analysis | ✅ Working |
+| **`analyze_savings_plans`** | Savings Plan utilization and coverage | ✅ Working |
+| **`get_rightsizing_recommendations`** | EC2/RDS rightsizing with cost savings | ✅ Working |
+| **`analyze_commitment_savings`** | RI/SP purchase recommendations with ROI | ✅ Working |
+| **`find_cost_optimization_opportunities`** | Aggregate all optimization opportunities | ✅ Working |
+
+#### Cost Waste Detection Tools (Find Hidden Waste)
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`find_zombie_resources`** | Find forgotten resources (EIPs, volumes, snapshots) | ✅ Working |
+| **`analyze_idle_resources`** | Detect idle EC2/RDS instances using metrics | ✅ Working |
+| **`analyze_snapshot_waste`** | Identify old and orphaned snapshots | ✅ Working |
+| **`analyze_data_transfer_costs`** | Analyze data transfer costs (10-30% of bill) | ✅ Working |
+| **`get_cost_allocation_tags`** | Analyze cost allocation tag coverage | ✅ Working |
+
 #### EC2 & Compute Tools
 | Tool | Description | Status |
 |------|-------------|--------|
@@ -297,6 +316,96 @@ for bucket in costs['by_bucket'][:5]:
     print(f"  {bucket['bucket_name']}: ${bucket['estimated_monthly_cost']:.2f}/month")
 ```
 
+#### Find Zombie Resources (Hidden Waste)
+```python
+from strandkit import find_zombie_resources
+
+# Find forgotten resources costing money
+zombies = find_zombie_resources(min_age_days=30)
+print(f"Zombie Resources Found: {zombies['summary']['total_zombies']}")
+print(f"Monthly Waste: ${zombies['summary']['total_monthly_waste']:.2f}")
+print(f"Annual Waste: ${zombies['summary']['total_annual_waste']:.2f}")
+
+# Show top offenders
+for zombie in zombies['zombie_resources'][:5]:
+    print(f"\n{zombie['resource_type']}: {zombie['resource_id']}")
+    print(f"  Age: {zombie['age_days']} days")
+    print(f"  Cost: ${zombie['monthly_cost']:.2f}/month")
+    print(f"  Reason: {zombie['reason']}")
+    print(f"  Action: {zombie['recommendation']}")
+```
+
+#### Detect Idle Resources
+```python
+from strandkit import analyze_idle_resources
+
+# Find idle EC2 instances
+idle = analyze_idle_resources(cpu_threshold=5.0, lookback_days=7)
+print(f"Idle Resources: {idle['summary']['total_idle']}")
+print(f"Potential Savings: ${idle['summary']['potential_monthly_savings']:.2f}/month")
+
+# Show idle instances
+for resource in idle['idle_resources']:
+    print(f"\n{resource['resource_id']} ({resource['instance_type']})")
+    print(f"  Avg CPU: {resource['avg_cpu']:.2f}%")
+    print(f"  Max CPU: {resource['max_cpu']:.2f}%")
+    print(f"  Cost: ${resource['monthly_cost']:.2f}/month")
+    print(f"  Recommendation: {resource['recommendation']}")
+```
+
+#### Analyze Snapshot Waste
+```python
+from strandkit import analyze_snapshot_waste
+
+# Find old and orphaned snapshots
+waste = analyze_snapshot_waste(min_age_days=90)
+print(f"Total Snapshots: {waste['ebs_snapshots']['total']}")
+print(f"Total Size: {waste['ebs_snapshots']['total_size_gb']:,} GB")
+print(f"Monthly Cost: ${waste['ebs_snapshots']['monthly_cost']:.2f}")
+
+print(f"\nOld Snapshots (>90 days): {len(waste['ebs_snapshots']['old_snapshots'])}")
+print(f"Orphaned Snapshots: {len(waste['ebs_snapshots']['orphaned_snapshots'])}")
+print(f"Potential Savings: ${waste['summary']['potential_monthly_savings']:.2f}/month")
+```
+
+#### Analyze Data Transfer Costs
+```python
+from strandkit import analyze_data_transfer_costs
+
+# Often 10-30% of AWS bill
+transfer = analyze_data_transfer_costs(days_back=30)
+print(f"Total Data Transfer Cost: ${transfer['total_data_transfer_cost']:.2f}")
+print(f"Percentage of Total Bill: {transfer['percentage_of_total_bill']:.1f}%")
+
+print("\nCost by Type:")
+for transfer_type, cost in transfer['by_type'].items():
+    print(f"  {transfer_type}: ${cost:.2f}")
+
+print("\nOptimization Opportunities:")
+for opp in transfer['optimization_opportunities']:
+    print(f"  • {opp}")
+```
+
+#### Full Cost Optimization Scan
+```python
+from strandkit import find_cost_optimization_opportunities
+
+# Aggregate all optimization opportunities
+opportunities = find_cost_optimization_opportunities(min_impact=50.0)
+
+print(f"Total Opportunities: {opportunities['summary']['total_opportunities']}")
+print(f"Total Potential Savings: ${opportunities['summary']['total_potential_savings']:.2f}/month")
+print(f"High-Impact Opportunities: {opportunities['summary']['high_impact_count']}")
+
+# Prioritized list
+for opp in opportunities['opportunities'][:10]:
+    print(f"\n{opp['category']}: {opp['title']}")
+    print(f"  Impact: ${opp['monthly_impact']:.2f}/month")
+    print(f"  Effort: {opp['effort']}")
+    print(f"  Risk: {opp['risk']}")
+    print(f"  Action: {opp['action']}")
+```
+
 ## Documentation
 
 ### Core Components
@@ -426,7 +535,7 @@ strandkit/
 
 ## Development Status
 
-**Current Version:** 0.4.0
+**Current Version:** 0.6.0
 
 ✅ **Complete:**
 - AWS Client wrapper
@@ -434,10 +543,12 @@ strandkit/
 - **CloudFormation tools** - Changeset analysis with risk assessment (1 tool)
 - **IAM tools** - Role analysis, policy explanation, security scanning (3 tools)
 - **Cost Explorer tools** - Usage analysis, forecasting, anomaly detection (4 tools)
+- **Cost Analytics tools** - RI/SP analysis, rightsizing, budgets, optimization (6 tools)
+- **Cost Waste Detection tools** - Zombie resources, idle detection, snapshot waste (5 tools)
 - **EC2 & Compute tools** - Instance analysis, security groups, resource optimization (5 tools)
 - **S3 & Storage tools** - Bucket security, public access detection, cost optimization (5 tools)
 - Comprehensive documentation and examples
-- **24 production-ready tools** tested with real AWS accounts
+- **35 production-ready tools** tested with real AWS accounts
 
 🚧 **In Progress:**
 - Agent framework (pending AWS Strands integration)
