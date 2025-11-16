@@ -402,4 +402,4 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
-*Last updated: 2025-11-16 by Claude Code*
+*Last updated: 2025-11-16*
