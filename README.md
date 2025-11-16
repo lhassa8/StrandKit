@@ -22,14 +22,19 @@
 
 ## Overview
 
-StrandKit is **not** a new agent framework—it extends AWS Strands by providing AWS-focused tools, prebuilt agent templates, and clean Python APIs that hide Strands boilerplate.
+StrandKit is a Python toolkit for AWS cloud analysis and optimization. It provides **60 production-ready tools** to help you:
 
-Think of it as the **developer experience layer** for AWS Strands Agents:
-- 🔧 **Batteries-included AWS tools** (CloudWatch, CloudFormation, IAM)
-- 🤖 **Ready-to-use agent templates** (InfraDebuggerAgent, etc.)
-- 🎯 **Simple, Pythonic APIs** that hide complexity
-- 📋 **LLM-friendly schemas** and documentation
-- 📖 **Comprehensive docstrings** and examples
+- 💰 **Reduce AWS costs** - Find waste, optimize resources, get rightsizing recommendations
+- 🔒 **Improve security** - Audit IAM policies, detect misconfigurations, enforce compliance
+- 📊 **Monitor infrastructure** - Analyze CloudWatch metrics, track performance, debug issues
+- ⚡ **Optimize performance** - Identify bottlenecks, recommend upgrades, analyze auto-scaling
+
+**What makes StrandKit different:**
+- **Comprehensive coverage** - 60 tools across IAM, EC2, S3, EBS, Cost Explorer, CloudWatch, and more
+- **Production-ready** - All tools tested with real AWS accounts, handles edge cases gracefully
+- **Easy to use** - Simple Python functions with clear return values, no complex setup
+- **Actionable insights** - Every tool provides specific recommendations, not just raw data
+- **Cost-focused** - Built-in cost calculations and savings estimates for optimization opportunities
 
 ## Features
 
