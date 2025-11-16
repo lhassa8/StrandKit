@@ -6,8 +6,10 @@ This package contains Strands-compatible tools for AWS services:
 - cloudwatch_enhanced: Advanced CloudWatch Logs Insights queries
 - cloudformation: CloudFormation changeset analysis
 - iam: IAM policy analysis and security auditing
+- iam_security: IAM security compliance and user auditing
 - cost: Cost Explorer for spending analysis and forecasting
 - cost_analytics: Advanced cost optimization (RI/SP, rightsizing, budgets)
+- cost_waste: Waste detection (zombie resources, idle instances, etc.)
 - ec2: EC2 instance and security group analysis
 - s3: S3 bucket security and cost optimization
 
@@ -22,6 +24,16 @@ from strandkit.tools.cloudwatch import get_lambda_logs, get_metric
 from strandkit.tools.cloudwatch_enhanced import get_log_insights, get_recent_errors
 from strandkit.tools.cloudformation import explain_changeset
 from strandkit.tools.iam import analyze_role, explain_policy, find_overpermissive_roles
+from strandkit.tools.iam_security import (
+    analyze_iam_users,
+    analyze_access_keys,
+    analyze_mfa_compliance,
+    analyze_password_policy,
+    find_cross_account_access,
+    detect_privilege_escalation_paths,
+    analyze_unused_permissions,
+    get_iam_credential_report
+)
 from strandkit.tools.cost import (
     get_cost_and_usage,
     get_cost_by_service,
@@ -70,6 +82,15 @@ __all__ = [
     "analyze_role",
     "explain_policy",
     "find_overpermissive_roles",
+    # IAM Security
+    "analyze_iam_users",
+    "analyze_access_keys",
+    "analyze_mfa_compliance",
+    "analyze_password_policy",
+    "find_cross_account_access",
+    "detect_privilege_escalation_paths",
+    "analyze_unused_permissions",
+    "get_iam_credential_report",
     # Cost
     "get_cost_and_usage",
     "get_cost_by_service",

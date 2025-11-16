@@ -55,6 +55,18 @@ Think of it as the **developer experience layer** for AWS Strands Agents:
 | **`explain_policy`** | Explain IAM policies in plain English | ✅ Working |
 | **`find_overpermissive_roles`** | Scan all roles for security issues | ✅ Working |
 
+#### IAM Security & Compliance Tools (Prevent Breaches)
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`analyze_iam_users`** | User security audit (inactive, MFA, old keys) | ✅ Working |
+| **`analyze_access_keys`** | Access key security analysis and rotation | ✅ Working |
+| **`analyze_mfa_compliance`** | MFA enforcement and compliance tracking | ✅ Working |
+| **`analyze_password_policy`** | Password policy vs CIS Benchmark | ✅ Working |
+| **`find_cross_account_access`** | Cross-account trust relationship analysis | ✅ Working |
+| **`detect_privilege_escalation_paths`** | Detect privilege escalation vectors | ✅ Working |
+| **`analyze_unused_permissions`** | Least privilege - find unused permissions | ✅ Working |
+| **`get_iam_credential_report`** | Comprehensive credential audit report | ✅ Working |
+
 #### Cost Explorer Tools
 | Tool | Description | Status |
 |------|-------------|--------|
@@ -227,6 +239,60 @@ for role in audit['overpermissive_roles']:
         print(f"\n⚠️ {role['role_name']}:")
         for rec in details['recommendations']:
             print(f"  {rec}")
+```
+
+#### IAM Security Compliance Audit
+```python
+from strandkit import (
+    analyze_iam_users,
+    analyze_mfa_compliance,
+    analyze_password_policy,
+    detect_privilege_escalation_paths
+)
+
+# Check user security
+users = analyze_iam_users(inactive_days=90)
+print(f"Inactive users: {users['summary']['inactive_users']}")
+print(f"MFA compliance: {users['summary']['mfa_compliance_rate']}%")
+print(f"Old access keys: {users['summary']['old_access_keys']}")
+
+# Check MFA compliance
+mfa = analyze_mfa_compliance()
+if not mfa['root_mfa_status']['enabled']:
+    print("🚨 CRITICAL: Root account MFA not enabled!")
+print(f"Console MFA compliance: {mfa['summary']['console_mfa_compliance_rate']}%")
+
+# Check password policy
+policy = analyze_password_policy()
+print(f"Password policy security score: {policy['security_score']}/100")
+if policy['violations']:
+    print(f"Policy violations: {len(policy['violations'])}")
+
+# Detect privilege escalation
+escalation = detect_privilege_escalation_paths()
+if escalation['summary']['critical_severity'] > 0:
+    print(f"🚨 CRITICAL: {escalation['summary']['critical_severity']} escalation paths!")
+```
+
+#### IAM Credential Report (Comprehensive Audit)
+```python
+from strandkit import get_iam_credential_report
+
+# Generate complete credential audit
+report = get_iam_credential_report()
+
+print(f"Total users: {report['summary']['total_users']}")
+print(f"MFA compliance: {report['summary']['mfa_compliance_rate']}%")
+print(f"Passwords >90 days: {report['summary']['passwords_over_90_days']}")
+print(f"Access keys >90 days: {report['summary']['access_keys_over_90_days']}")
+print(f"Inactive users: {report['summary']['inactive_users']}")
+
+# Show users with issues
+for user in report['users']:
+    if user['issues']:
+        print(f"\n⚠️ {user['username']}:")
+        for issue in user['issues']:
+            print(f"  - {issue}")
 ```
 
 #### Cost Analysis
@@ -535,20 +601,21 @@ strandkit/
 
 ## Development Status
 
-**Current Version:** 0.6.0
+**Current Version:** 0.7.0
 
 ✅ **Complete:**
 - AWS Client wrapper
 - **CloudWatch tools** - Logs, Metrics, Insights queries, error detection (4 tools)
 - **CloudFormation tools** - Changeset analysis with risk assessment (1 tool)
 - **IAM tools** - Role analysis, policy explanation, security scanning (3 tools)
+- **IAM Security tools** - User audits, MFA compliance, privilege escalation detection (8 tools)
 - **Cost Explorer tools** - Usage analysis, forecasting, anomaly detection (4 tools)
 - **Cost Analytics tools** - RI/SP analysis, rightsizing, budgets, optimization (6 tools)
 - **Cost Waste Detection tools** - Zombie resources, idle detection, snapshot waste (5 tools)
 - **EC2 & Compute tools** - Instance analysis, security groups, resource optimization (5 tools)
 - **S3 & Storage tools** - Bucket security, public access detection, cost optimization (5 tools)
 - Comprehensive documentation and examples
-- **35 production-ready tools** tested with real AWS accounts
+- **43 production-ready tools** tested with real AWS accounts
 
 🚧 **In Progress:**
 - Agent framework (pending AWS Strands integration)

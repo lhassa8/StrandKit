@@ -17,7 +17,7 @@ Example usage:
 For more information, see: https://github.com/yourusername/strandkit
 """
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 __author__ = "Your Name"
 
 # Import main agent templates for easy access
@@ -28,6 +28,16 @@ from strandkit.tools.cloudwatch import get_lambda_logs, get_metric
 from strandkit.tools.cloudwatch_enhanced import get_log_insights, get_recent_errors
 from strandkit.tools.cloudformation import explain_changeset
 from strandkit.tools.iam import analyze_role, explain_policy, find_overpermissive_roles
+from strandkit.tools.iam_security import (
+    analyze_iam_users,
+    analyze_access_keys,
+    analyze_mfa_compliance,
+    analyze_password_policy,
+    find_cross_account_access,
+    detect_privilege_escalation_paths,
+    analyze_unused_permissions,
+    get_iam_credential_report
+)
 from strandkit.tools.cost import (
     get_cost_and_usage,
     get_cost_by_service,
@@ -78,6 +88,15 @@ __all__ = [
     "analyze_role",
     "explain_policy",
     "find_overpermissive_roles",
+    # IAM Security tools
+    "analyze_iam_users",
+    "analyze_access_keys",
+    "analyze_mfa_compliance",
+    "analyze_password_policy",
+    "find_cross_account_access",
+    "detect_privilege_escalation_paths",
+    "analyze_unused_permissions",
+    "get_iam_credential_report",
     # Cost tools
     "get_cost_and_usage",
     "get_cost_by_service",
