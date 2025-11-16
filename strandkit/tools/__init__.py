@@ -7,6 +7,7 @@ This package contains Strands-compatible tools for AWS services:
 - cloudformation: CloudFormation changeset analysis
 - iam: IAM policy analysis and security auditing
 - cost: Cost Explorer for spending analysis and forecasting
+- ec2: EC2 instance and security group analysis
 
 All tools follow consistent patterns:
 - Accept simple, well-typed parameters
@@ -24,6 +25,13 @@ from strandkit.tools.cost import (
     get_cost_by_service,
     detect_cost_anomalies,
     get_cost_forecast
+)
+from strandkit.tools.ec2 import (
+    analyze_ec2_instance,
+    get_ec2_inventory,
+    find_unused_resources,
+    analyze_security_group,
+    find_overpermissive_security_groups
 )
 
 __all__ = [
@@ -43,4 +51,10 @@ __all__ = [
     "get_cost_by_service",
     "detect_cost_anomalies",
     "get_cost_forecast",
+    # EC2
+    "analyze_ec2_instance",
+    "get_ec2_inventory",
+    "find_unused_resources",
+    "analyze_security_group",
+    "find_overpermissive_security_groups",
 ]

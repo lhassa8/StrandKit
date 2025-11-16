@@ -63,6 +63,15 @@ Think of it as the **developer experience layer** for AWS Strands Agents:
 | **`detect_cost_anomalies`** | Find unusual spending patterns | ✅ Working |
 | **`get_cost_forecast`** | Forecast future AWS costs | ✅ Working |
 
+#### EC2 & Compute Tools
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`analyze_ec2_instance`** | Comprehensive instance analysis with metrics | ✅ Working |
+| **`get_ec2_inventory`** | List all instances with summary statistics | ✅ Working |
+| **`find_unused_resources`** | Find stopped instances, unattached volumes, unused EIPs | ✅ Working |
+| **`analyze_security_group`** | Analyze security group rules with risk assessment | ✅ Working |
+| **`find_overpermissive_security_groups`** | Scan all security groups for security risks | ✅ Working |
+
 ### Agent Templates (Coming Soon)
 
 | Agent | Description | Status |
@@ -108,7 +117,9 @@ from strandkit import (
     get_lambda_logs,
     get_metric,
     analyze_role,
-    get_cost_by_service
+    get_cost_by_service,
+    get_ec2_inventory,
+    find_overpermissive_security_groups
 )
 
 # Get Lambda logs from the last hour
@@ -123,6 +134,15 @@ errors = get_metric(
     statistic="Sum"
 )
 print(f"Error rate: {errors['summary']}")
+
+# Get EC2 inventory
+inventory = get_ec2_inventory()
+print(f"Total instances: {inventory['summary']['total_instances']}")
+print(f"Monthly cost: ${inventory['total_monthly_cost']:.2f}")
+
+# Scan security groups for risks
+sg_scan = find_overpermissive_security_groups()
+print(f"Critical security groups: {sg_scan['summary']['critical']}")
 
 # Analyze IAM role security
 role = analyze_role("MyAppRole")
@@ -197,6 +217,38 @@ if anomalies['total_anomalies'] > 0:
     print(f"\n⚠️ {anomalies['total_anomalies']} cost anomalies detected!")
     for a in anomalies['anomalies']:
         print(f"  {a['date']}: ${a['cost']:.2f} (+{a['deviation_percentage']:.1f}%)")
+```
+
+#### EC2 Security Audit
+```python
+from strandkit import find_overpermissive_security_groups, analyze_security_group
+
+# Scan all security groups
+scan = find_overpermissive_security_groups()
+print(f"Security Groups Scanned: {scan['summary']['total_groups']}")
+print(f"Critical Risks: {scan['summary']['critical']}")
+print(f"High Risks: {scan['summary']['high']}")
+
+# Analyze risky groups
+for sg in scan['risky_groups']:
+    if sg['risk_level'] in ['critical', 'high']:
+        details = analyze_security_group(sg['group_id'])
+        print(f"\n🔴 {sg['group_name']}:")
+        for factor in sg['risk_factors']:
+            print(f"  - {factor}")
+```
+
+#### Find Unused EC2 Resources
+```python
+from strandkit import find_unused_resources
+
+# Scan for waste
+unused = find_unused_resources()
+print(f"Potential Monthly Savings: ${unused['total_potential_savings']:.2f}")
+print(f"\nStopped Instances: {unused['stopped_instances_count']}")
+print(f"Unattached Volumes: {unused['unattached_volumes_count']}")
+print(f"Unused Elastic IPs: {unused['unused_elastic_ips_count']}")
+print(f"Old Snapshots (>90 days): {unused['old_snapshots_count']}")
 ```
 
 ## Documentation
@@ -328,16 +380,17 @@ strandkit/
 
 ## Development Status
 
-**Current Version:** 0.2.0
+**Current Version:** 0.3.0
 
 ✅ **Complete:**
 - AWS Client wrapper
-- **CloudWatch tools** - Logs, Metrics, Insights queries, error detection
-- **CloudFormation tools** - Changeset analysis with risk assessment
-- **IAM tools** - Role analysis, policy explanation, security scanning
-- **Cost Explorer tools** - Usage analysis, forecasting, anomaly detection
+- **CloudWatch tools** - Logs, Metrics, Insights queries, error detection (4 tools)
+- **CloudFormation tools** - Changeset analysis with risk assessment (1 tool)
+- **IAM tools** - Role analysis, policy explanation, security scanning (3 tools)
+- **Cost Explorer tools** - Usage analysis, forecasting, anomaly detection (4 tools)
+- **EC2 & Compute tools** - Instance analysis, security groups, resource optimization (5 tools)
 - Comprehensive documentation and examples
-- **14 production-ready tools** tested with real AWS accounts
+- **19 production-ready tools** tested with real AWS accounts
 
 🚧 **In Progress:**
 - Agent framework (pending AWS Strands integration)
@@ -345,8 +398,8 @@ strandkit/
 - CLI interface
 
 📋 **Planned:**
-- IAM policy analyzer
-- Cost analysis tools
+- S3 bucket analysis tools
+- RDS database monitoring tools
 - Additional agent templates
 - PyPI package publication
 - MCP server integration

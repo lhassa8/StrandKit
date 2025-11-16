@@ -2,7 +2,7 @@
 StrandKit - Companion SDK for AWS Strands Agents
 
 StrandKit is not a new agent framework; it extends AWS Strands by providing:
-- AWS-focused tools (CloudWatch, CloudFormation, IAM)
+- AWS-focused tools (CloudWatch, CloudFormation, IAM, EC2, Cost Explorer)
 - Prebuilt agent templates (InfraDebuggerAgent, etc.)
 - High-level Python APIs that hide Strands boilerplate
 - Clean JSON schemas for all tools
@@ -17,7 +17,7 @@ Example usage:
 For more information, see: https://github.com/yourusername/strandkit
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __author__ = "Your Name"
 
 # Import main agent templates for easy access
@@ -33,6 +33,13 @@ from strandkit.tools.cost import (
     get_cost_by_service,
     detect_cost_anomalies,
     get_cost_forecast
+)
+from strandkit.tools.ec2 import (
+    analyze_ec2_instance,
+    get_ec2_inventory,
+    find_unused_resources,
+    analyze_security_group,
+    find_overpermissive_security_groups
 )
 
 __all__ = [
@@ -54,4 +61,10 @@ __all__ = [
     "get_cost_by_service",
     "detect_cost_anomalies",
     "get_cost_forecast",
+    # EC2 tools
+    "analyze_ec2_instance",
+    "get_ec2_inventory",
+    "find_unused_resources",
+    "analyze_security_group",
+    "find_overpermissive_security_groups",
 ]

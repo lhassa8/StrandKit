@@ -450,6 +450,329 @@ forecast = get_cost_forecast(days_forward=30)
 
 ---
 
+## EC2 & Compute Tools
+
+### analyze_ec2_instance()
+
+Perform comprehensive analysis of an EC2 instance.
+
+**Parameters:**
+- `instance_id` (str): EC2 instance ID (e.g., "i-1234567890abcdef0")
+- `include_metrics` (bool): Whether to fetch CloudWatch metrics (default: True)
+- `aws_client` (AWSClient, optional): Custom AWS client
+
+**Returns:**
+```json
+{
+  "instance_id": "i-1234567890abcdef0",
+  "instance_details": {
+    "instance_id": "i-1234567890abcdef0",
+    "instance_type": "t3.medium",
+    "state": "running",
+    "launch_time": "2025-01-15T10:30:00Z",
+    "uptime_days": 30,
+    "availability_zone": "us-east-1a",
+    "private_ip": "10.0.1.50",
+    "public_ip": "54.123.45.67"
+  },
+  "security_groups": [
+    {
+      "group_id": "sg-abc123",
+      "group_name": "web-servers",
+      "ingress_rules_count": 3,
+      "egress_rules_count": 1
+    }
+  ],
+  "volumes": [
+    {
+      "volume_id": "vol-xyz789",
+      "device_name": "/dev/xvda",
+      "size_gb": 100,
+      "volume_type": "gp3",
+      "encrypted": true,
+      "state": "in-use"
+    }
+  ],
+  "cost_estimate": {
+    "monthly_cost": 45.50,
+    "instance_cost": 35.50,
+    "storage_cost": 10.00
+  },
+  "metrics": {
+    "cpu_utilization": {
+      "average": 12.5,
+      "maximum": 45.2
+    }
+  },
+  "health_check": {
+    "health_status": "healthy",
+    "issues": [],
+    "warnings": []
+  },
+  "recommendations": [
+    "✅ Instance configuration looks good"
+  ]
+}
+```
+
+**Example:**
+```python
+from strandkit import analyze_ec2_instance
+
+analysis = analyze_ec2_instance("i-1234567890abcdef0")
+print(f"Monthly cost: ${analysis['cost_estimate']['monthly_cost']:.2f}")
+print(f"CPU average: {analysis['metrics']['cpu_utilization']['average']:.1f}%")
+```
+
+---
+
+### get_ec2_inventory()
+
+Get comprehensive inventory of all EC2 instances.
+
+**Parameters:**
+- `filters` (dict, optional): EC2 filters (e.g., {"instance-state-name": ["running"]})
+- `aws_client` (AWSClient, optional): Custom AWS client
+
+**Returns:**
+```json
+{
+  "instances": [
+    {
+      "instance_id": "i-abc123",
+      "name": "web-server-1",
+      "instance_type": "t3.medium",
+      "state": "running",
+      "uptime_days": 45,
+      "private_ip": "10.0.1.10",
+      "availability_zone": "us-east-1a",
+      "estimated_monthly_cost": 35.50
+    }
+  ],
+  "summary": {
+    "total_instances": 10,
+    "by_state": {
+      "running": 8,
+      "stopped": 2
+    },
+    "by_type": {
+      "t3.medium": 6,
+      "t3.large": 4
+    },
+    "by_az": {
+      "us-east-1a": 5,
+      "us-east-1b": 5
+    }
+  },
+  "total_monthly_cost": 355.00
+}
+```
+
+**Example:**
+```python
+from strandkit import get_ec2_inventory
+
+# Get all running instances
+inventory = get_ec2_inventory(filters={"instance-state-name": ["running"]})
+print(f"Running instances: {inventory['summary']['by_state']['running']}")
+print(f"Total monthly cost: ${inventory['total_monthly_cost']:.2f}")
+```
+
+---
+
+### find_unused_resources()
+
+Find unused or underutilized EC2 resources to reduce costs.
+
+**Parameters:**
+- `aws_client` (AWSClient, optional): Custom AWS client
+
+**Returns:**
+```json
+{
+  "stopped_instances": [
+    {
+      "instance_id": "i-xyz789",
+      "name": "old-test-server",
+      "instance_type": "t3.large",
+      "availability_zone": "us-east-1a"
+    }
+  ],
+  "stopped_instances_count": 3,
+  "unattached_volumes": [
+    {
+      "volume_id": "vol-abc123",
+      "size_gb": 100,
+      "volume_type": "gp2",
+      "availability_zone": "us-east-1a",
+      "estimated_monthly_cost": 10.00
+    }
+  ],
+  "unattached_volumes_count": 5,
+  "unused_elastic_ips": [
+    {
+      "allocation_id": "eipalloc-abc123",
+      "public_ip": "54.123.45.67",
+      "estimated_monthly_cost": 3.65
+    }
+  ],
+  "unused_elastic_ips_count": 2,
+  "old_snapshots": [
+    {
+      "snapshot_id": "snap-xyz789",
+      "size_gb": 50,
+      "age_days": 180,
+      "estimated_monthly_cost": 2.50
+    }
+  ],
+  "old_snapshots_count": 15,
+  "total_potential_savings": 125.50,
+  "breakdown": {
+    "volumes": 50.00,
+    "elastic_ips": 7.30,
+    "snapshots": 68.20
+  },
+  "recommendations": [
+    "💰 5 unattached volume(s) found - potential savings: $50.00/month"
+  ]
+}
+```
+
+**Example:**
+```python
+from strandkit import find_unused_resources
+
+unused = find_unused_resources()
+print(f"Potential monthly savings: ${unused['total_potential_savings']:.2f}")
+print(f"Stopped instances: {unused['stopped_instances_count']}")
+print(f"Unattached volumes: {unused['unattached_volumes_count']}")
+```
+
+---
+
+### analyze_security_group()
+
+Analyze security group rules and assess security risks.
+
+**Parameters:**
+- `group_id` (str): Security group ID (e.g., "sg-1234567890abcdef0")
+- `aws_client` (AWSClient, optional): Custom AWS client
+
+**Returns:**
+```json
+{
+  "group_id": "sg-abc123",
+  "group_details": {
+    "group_id": "sg-abc123",
+    "group_name": "web-servers",
+    "description": "Security group for web servers",
+    "vpc_id": "vpc-xyz789"
+  },
+  "ingress_rules": [
+    {
+      "direction": "ingress",
+      "protocol": "tcp",
+      "from_port": 443,
+      "to_port": 443,
+      "sources": [
+        {"type": "cidr", "value": "0.0.0.0/0"}
+      ],
+      "risk_level": "high",
+      "risk_reason": "Public access to port 443"
+    }
+  ],
+  "ingress_rules_count": 3,
+  "egress_rules_count": 1,
+  "risk_assessment": {
+    "risk_level": "high",
+    "risk_factors": [
+      "Public access to port 443"
+    ]
+  },
+  "attached_resources": {
+    "instances": 5
+  },
+  "recommendations": [
+    "🔒 Restrict public access (0.0.0.0/0) to specific IP ranges where possible"
+  ]
+}
+```
+
+**Example:**
+```python
+from strandkit import analyze_security_group
+
+sg = analyze_security_group("sg-1234567890abcdef0")
+print(f"Risk level: {sg['risk_assessment']['risk_level']}")
+print(f"Attached instances: {sg['attached_resources']['instances']}")
+```
+
+---
+
+### find_overpermissive_security_groups()
+
+Scan all security groups for overly permissive rules.
+
+**Parameters:**
+- `aws_client` (AWSClient, optional): Custom AWS client
+
+**Returns:**
+```json
+{
+  "security_groups": [
+    {
+      "group_id": "sg-abc123",
+      "group_name": "ssh-access",
+      "risk_level": "critical",
+      "risk_factors": [
+        "Allows SSH (22) from 0.0.0.0/0"
+      ],
+      "ingress_rules_count": 1,
+      "is_unused": false
+    }
+  ],
+  "risky_groups": [
+    {
+      "group_id": "sg-abc123",
+      "group_name": "ssh-access",
+      "risk_level": "critical",
+      "risk_factors": [
+        "Allows SSH (22) from 0.0.0.0/0"
+      ]
+    }
+  ],
+  "unused_groups": [],
+  "summary": {
+    "total_groups": 25,
+    "critical": 2,
+    "high": 5,
+    "medium": 8,
+    "low": 10,
+    "unused": 3
+  },
+  "recommendations": [
+    "🔴 URGENT: 2 security group(s) with CRITICAL risk - immediate action required",
+    "⚠️ 5 security group(s) with HIGH risk - review and restrict access"
+  ]
+}
+```
+
+**Example:**
+```python
+from strandkit import find_overpermissive_security_groups
+
+scan = find_overpermissive_security_groups()
+print(f"Total groups: {scan['summary']['total_groups']}")
+print(f"Critical risks: {scan['summary']['critical']}")
+
+# Review critical groups
+for sg in scan['risky_groups']:
+    if sg['risk_level'] == 'critical':
+        print(f"🔴 {sg['group_name']}: {sg['risk_factors']}")
+```
+
+---
+
 ## Common Patterns
 
 ### Error Handling
@@ -500,9 +823,9 @@ if errors['summary']['max'] > 0:
 |----------|-------|----------|
 | **Monitoring** | get_lambda_logs, get_metric, get_recent_errors | Real-time monitoring and alerting |
 | **Analysis** | get_log_insights, detect_cost_anomalies | Deep dive investigations |
-| **Security** | analyze_role, explain_policy, find_overpermissive_roles | Security audits and compliance |
-| **Cost** | get_cost_and_usage, get_cost_by_service, get_cost_forecast | Budget management and optimization |
-| **Infrastructure** | explain_changeset | Change management and deployments |
+| **Security** | analyze_role, explain_policy, find_overpermissive_roles, analyze_security_group, find_overpermissive_security_groups | Security audits and compliance |
+| **Cost** | get_cost_and_usage, get_cost_by_service, get_cost_forecast, find_unused_resources | Budget management and optimization |
+| **Infrastructure** | explain_changeset, analyze_ec2_instance, get_ec2_inventory | Change management, deployments, and inventory |
 
 ---
 
