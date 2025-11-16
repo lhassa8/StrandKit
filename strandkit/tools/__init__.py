@@ -136,4 +136,21 @@ __all__ = [
     "analyze_ebs_encryption",
     "find_ebs_volume_anomalies",
     "analyze_ami_usage",
+    # S3 Advanced
+    "analyze_s3_storage_classes",
+    "analyze_s3_lifecycle_policies",
+    "find_s3_versioning_waste",
+    "find_incomplete_multipart_uploads",
+    "analyze_s3_replication",
+    "analyze_s3_request_costs",
+    "analyze_large_s3_objects",
 ]
+from strandkit.tools.s3_advanced import (
+    analyze_s3_storage_classes,
+    analyze_s3_lifecycle_policies,
+    find_s3_versioning_waste,
+    find_incomplete_multipart_uploads,
+    analyze_s3_replication,
+    analyze_s3_request_costs,
+    analyze_large_s3_objects
+)
