@@ -104,8 +104,12 @@ pip install strandkit
 ### Basic Usage
 
 ```python
-from strandkit.tools.cloudwatch import get_lambda_logs, get_metric
-from strandkit.tools.cloudformation import explain_changeset
+from strandkit import (
+    get_lambda_logs,
+    get_metric,
+    analyze_role,
+    get_cost_by_service
+)
 
 # Get Lambda logs from the last hour
 logs = get_lambda_logs("my-function", start_minutes=60)
@@ -120,21 +124,25 @@ errors = get_metric(
 )
 print(f"Error rate: {errors['summary']}")
 
-# Analyze CloudFormation changes
-changeset = explain_changeset("my-changeset", "my-stack")
-for change in changeset['changes']:
-    if change['risk_level'] == 'high':
-        print(f"⚠️ {change['details']}")
+# Analyze IAM role security
+role = analyze_role("MyAppRole")
+print(f"Risk level: {role['risk_assessment']['risk_level']}")
+
+# Get cost breakdown by service
+costs = get_cost_by_service(days_back=30, top_n=5)
+for svc in costs['services']:
+    print(f"{svc['service']}: ${svc['cost']:.2f}")
 ```
 
-### Real-World Example: Debug Lambda Errors
+### Real-World Examples
 
+#### Debug Lambda Errors
 ```python
-from strandkit.tools.cloudwatch import get_lambda_logs, get_metric
+from strandkit import get_lambda_logs, get_metric
 
 function_name = "my-api-function"
 
-# 1. Check if there are errors
+# 1. Check error metrics
 errors = get_metric(
     namespace="AWS/Lambda",
     metric_name="Errors",
@@ -144,8 +152,6 @@ errors = get_metric(
 )
 
 if errors['summary']['max'] > 0:
-    print(f"⚠️ Found errors! Investigating...")
-
     # 2. Get error logs
     error_logs = get_lambda_logs(
         function_name,
@@ -156,6 +162,41 @@ if errors['summary']['max'] > 0:
     # 3. Print error messages
     for event in error_logs['events']:
         print(f"[{event['timestamp']}] {event['message']}")
+```
+
+#### Security Audit
+```python
+from strandkit import find_overpermissive_roles, analyze_role
+
+# Scan all roles
+audit = find_overpermissive_roles()
+print(f"Found {len(audit['overpermissive_roles'])} risky roles")
+
+# Analyze critical roles
+for role in audit['overpermissive_roles']:
+    if role['risk_level'] in ['critical', 'high']:
+        details = analyze_role(role['role_name'])
+        print(f"\n⚠️ {role['role_name']}:")
+        for rec in details['recommendations']:
+            print(f"  {rec}")
+```
+
+#### Cost Analysis
+```python
+from strandkit import get_cost_by_service, detect_cost_anomalies
+
+# Get spending breakdown
+costs = get_cost_by_service(days_back=30)
+print(f"Total: ${costs['total_cost']:.2f}")
+for svc in costs['services'][:5]:
+    print(f"  {svc['service']}: ${svc['cost']:.2f} ({svc['percentage']:.1f}%)")
+
+# Check for unusual spending
+anomalies = detect_cost_anomalies(days_back=30)
+if anomalies['total_anomalies'] > 0:
+    print(f"\n⚠️ {anomalies['total_anomalies']} cost anomalies detected!")
+    for a in anomalies['anomalies']:
+        print(f"  {a['date']}: ${a['cost']:.2f} (+{a['deviation_percentage']:.1f}%)")
 ```
 
 ## Documentation
