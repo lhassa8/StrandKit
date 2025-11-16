@@ -17,7 +17,7 @@ Example usage:
 For more information, see: https://github.com/yourusername/strandkit
 """
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 __author__ = "Your Name"
 
 # Import main agent templates for easy access
@@ -73,6 +73,14 @@ from strandkit.tools.s3 import (
     analyze_bucket_access,
     find_unused_buckets
 )
+from strandkit.tools.ebs import (
+    analyze_ebs_volumes,
+    analyze_ebs_snapshots_lifecycle,
+    get_ebs_iops_recommendations,
+    analyze_ebs_encryption,
+    find_ebs_volume_anomalies,
+    analyze_ami_usage
+)
 
 __all__ = [
     # Agents
@@ -127,4 +135,11 @@ __all__ = [
     "get_s3_cost_analysis",
     "analyze_bucket_access",
     "find_unused_buckets",
+    # EBS tools
+    "analyze_ebs_volumes",
+    "analyze_ebs_snapshots_lifecycle",
+    "get_ebs_iops_recommendations",
+    "analyze_ebs_encryption",
+    "find_ebs_volume_anomalies",
+    "analyze_ami_usage",
 ]
