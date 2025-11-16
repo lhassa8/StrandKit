@@ -17,7 +17,7 @@ Example usage:
 For more information, see: https://github.com/yourusername/strandkit
 """
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"
 __author__ = "Your Name"
 
 # Import main agent templates for easy access
@@ -150,6 +150,11 @@ __all__ = [
     "analyze_s3_replication",
     "analyze_s3_request_costs",
     "analyze_large_s3_objects",
+    # EC2 Advanced tools
+    "analyze_ec2_performance",
+    "analyze_auto_scaling_groups",
+    "analyze_load_balancers",
+    "get_ec2_spot_recommendations",
 ]
 from strandkit.tools.s3_advanced import (
     analyze_s3_storage_classes,
@@ -159,4 +164,10 @@ from strandkit.tools.s3_advanced import (
     analyze_s3_replication,
     analyze_s3_request_costs,
     analyze_large_s3_objects
+)
+from strandkit.tools.ec2_advanced import (
+    analyze_ec2_performance,
+    analyze_auto_scaling_groups,
+    analyze_load_balancers,
+    get_ec2_spot_recommendations
 )
