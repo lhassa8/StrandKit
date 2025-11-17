@@ -22,19 +22,21 @@
 
 ## Overview
 
-StrandKit is a Python toolkit for AWS cloud analysis and optimization. It provides **60 production-ready tools** to help you:
+StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.com/)** that provides **60 production-ready AWS tools** for:
 
-- 💰 **Reduce AWS costs** - Find waste, optimize resources, get rightsizing recommendations
-- 🔒 **Improve security** - Audit IAM policies, detect misconfigurations, enforce compliance
-- 📊 **Monitor infrastructure** - Analyze CloudWatch metrics, track performance, debug issues
-- ⚡ **Optimize performance** - Identify bottlenecks, recommend upgrades, analyze auto-scaling
+- 💰 **Cost optimization** - Find waste, analyze spending, get rightsizing recommendations
+- 🔒 **Security auditing** - Scan IAM policies, detect misconfigurations, enforce compliance
+- 📊 **Infrastructure monitoring** - Analyze CloudWatch metrics, track performance, debug issues
+- ⚡ **Performance tuning** - Identify bottlenecks, optimize auto-scaling, analyze load balancers
 
-**What makes StrandKit different:**
-- **Comprehensive coverage** - 60 tools across IAM, EC2, S3, EBS, Cost Explorer, CloudWatch, and more
-- **Production-ready** - All tools tested with real AWS accounts, handles edge cases gracefully
-- **Easy to use** - Simple Python functions with clear return values, no complex setup
-- **Actionable insights** - Every tool provides specific recommendations, not just raw data
-- **Cost-focused** - Built-in cost calculations and savings estimates for optimization opportunities
+**Perfect for AWS Strands Agents:**
+- **Drop-in ready** - All 60 tools work seamlessly with Strands agents via `get_all_tools()`
+- **Auto-generated schemas** - Tool definitions automatically converted to Strands-compatible format
+- **Category organization** - Filter by IAM, EC2, S3, Cost, CloudWatch for specialized agents
+- **Production-tested** - All tools validated with real AWS accounts, handles edge cases gracefully
+- **Actionable insights** - Every tool provides recommendations, not just raw data
+
+**Also works standalone** - Use tools directly without Strands for scripting and automation
 
 ## Why StrandKit?
 
@@ -69,116 +71,160 @@ print(f"Found {risky_roles['summary']['high_risk']} high-risk roles")
 
 No infrastructure to deploy. No configuration files. No learning curve. Just import and run.
 
-## What are Strands Agents?
+## What is AWS Strands Agents?
 
-**Strands** is StrandKit's built-in AI agent framework that combines Claude (Anthropic's AI) with StrandKit's 60 AWS tools to create intelligent, autonomous AWS infrastructure assistants.
+**[AWS Strands Agents](https://strandsagents.com/)** is an open-source Python SDK from AWS for building production-ready, multi-agent AI systems. It provides:
 
-### How Strands Agents Work
+- 🤖 **Agent orchestration** - Build AI agents that reason, plan, and reflect
+- 🔧 **Tool integration** - Python functions, MCP tools, AWS service integrations
+- 🤝 **Multi-agent patterns** - Agent swarms, handoffs, and graph-based workflows
+- 🏢 **Enterprise features** - Memory, observability, guardrails, PII redaction
+- ☁️ **AWS-native** - Deploy to Lambda, EKS, Fargate; use Bedrock models
 
-**The Architecture:**
-```
-Your Question → Claude AI → Tool Selection → AWS APIs → Analysis → Natural Language Answer
-```
+Learn more: [strandsagents.com](https://strandsagents.com/latest/)
 
-1. **You ask a natural language question**
-   - Example: "Why is my Lambda function failing?"
-   - Example: "Are there any security risks in my IAM roles?"
-   - Example: "How can I reduce my AWS costs?"
+## Why StrandKit?
 
-2. **Claude analyzes your question**
-   - Uses Claude 3.5 Haiku (Anthropic's AI model)
-   - Understands intent and determines what information is needed
-   - Plans which tools to use
+**StrandKit is a companion SDK that supercharges AWS Strands Agents with 60 production-ready AWS tools.**
 
-3. **Agent executes StrandKit tools automatically**
-   - Calls `get_lambda_logs()` to find errors
-   - Calls `get_metric()` to check CloudWatch metrics
-   - Calls `analyze_role()` to check IAM permissions
-   - Can use multiple tools in sequence to gather evidence
+### The Problem
+AWS Strands Agents gives you the framework to build AI agents, but you still need to write all the AWS integration code yourself:
+- Want to analyze IAM security? Write boto3 code to scan roles, parse policies, assess risks...
+- Want to find cost waste? Write code to query Cost Explorer, analyze snapshots, check unused resources...
+- Want to debug Lambda errors? Write code to fetch logs, parse CloudWatch metrics, correlate events...
 
-4. **Claude synthesizes findings into an answer**
-   - Correlates data from multiple tools
-   - Identifies patterns and root causes
-   - Provides natural language explanation with specific recommendations
+**Every AWS use case requires 50-200 lines of boto3 boilerplate.**
 
-**Technical Details:**
-- **Agent Framework**: StrandKit's `BaseAgent` class handles the conversation loop
-- **AI Model**: Claude 3.5 Haiku via Anthropic API (fast, accurate, cost-effective ~$0.001/query)
-- **Tool Calling**: Uses Claude's native function calling with automatically generated schemas
-- **Tool Registry**: 60 AWS tools organized into 12 categories (CloudWatch, IAM, Cost, EC2, S3, etc.)
-- **Multi-turn Reasoning**: Agents can make multiple tool calls and iterate to answer complex questions
+### The Solution
+StrandKit provides 60 pre-built AWS tools that work seamlessly with Strands Agents:
 
-### Three Ways to Use StrandKit
-
-**1. Standalone Tools (No AI Required)**
 ```python
+# Instead of writing this yourself:
+# - boto3 client setup
+# - IAM role enumeration
+# - Policy document parsing
+# - Wildcard detection logic
+# - Risk assessment algorithms
+# - Trust relationship analysis
+# - Output formatting
+# ... 150+ lines of code
+
+# Use StrandKit's ready-made tool:
 from strandkit import find_overpermissive_roles
-results = find_overpermissive_roles()
-# You analyze the results manually
+risky_roles = find_overpermissive_roles()
 ```
-- Direct function calls
-- Full control over which tools to use
-- No API keys needed (just AWS credentials)
 
-**2. Pre-built Strands Agents (AI-Powered)**
+**StrandKit tools are drop-in ready for Strands Agents** - just register them and your agents can use them immediately.
+
+## Three Ways to Use StrandKit
+
+### 1. With AWS Strands Agents (Recommended)
+
+Use StrandKit's 60 tools with the official AWS Strands framework:
+
 ```python
-from strandkit import InfraDebuggerAgent
-agent = InfraDebuggerAgent(api_key="sk-ant-...")
-result = agent.run("Why is my Lambda function failing?")
-# Agent automatically calls get_lambda_logs(), analyzes results, explains the issue
-```
-- Natural language interface
-- Agent picks the right tools
-- AI correlates findings and explains them
-- Requires Anthropic API key
+from strands import Agent
+from strandkit.strands import get_all_tools
 
-**3. Custom Strands Agents (Build Your Own)**
+# Create a Strands agent with all StrandKit tools
+agent = Agent(
+    name="aws-analyst",
+    tools=get_all_tools(),  # 60 AWS tools ready to use
+    model="anthropic.claude-3-5-haiku"
+)
+
+# Agent can now use any StrandKit tool
+response = agent.run("Find security risks in my IAM roles")
+# Agent automatically calls find_overpermissive_roles() and explains findings
+```
+
+**Tool Selection by Category:**
 ```python
 from strandkit.strands import get_tools_by_category
-from strandkit.core import BaseAgent
 
-class CostAnalystAgent(BaseAgent):
-    SYSTEM_PROMPT_FILE = "prompts/cost_analyst.md"
+# Build specialized agents with specific tool sets
+security_agent = Agent(
+    name="security-auditor",
+    tools=(get_tools_by_category('iam') +
+           get_tools_by_category('iam_security') +
+           get_tools_by_category('ec2')),
+    model="anthropic.claude-3-5-sonnet"
+)
 
-    def _get_tools(self):
-        # Give agent only cost-related tools
-        return (get_tools_by_category('cost') +
-                get_tools_by_category('cost_analytics') +
-                get_tools_by_category('cost_waste'))
-
-agent = CostAnalystAgent(api_key="sk-ant-...")
-result = agent.run("Find opportunities to save money")
-```
-- Define custom agent behavior with system prompts
-- Choose exactly which tools the agent can use
-- Build specialized agents for specific use cases
-
-### Why "Strands"?
-
-The name "Strands" represents the **strands of reasoning** that AI agents weave together:
-- Strand 1: CloudWatch metrics show high error rates
-- Strand 2: Recent IAM policy change removed permissions
-- Strand 3: CloudFormation changeset shows infrastructure update
-- **Woven together**: "Your Lambda started failing after the IAM policy update that removed S3 access"
-
-Each tool provides one "strand" of evidence. The AI agent weaves them together into a complete understanding.
-
-### Requirements for Strands Agents
-
-- **Python 3.8+**
-- **AWS credentials** (for tool execution)
-- **Anthropic API key** (for Claude AI) - Get yours at [console.anthropic.com](https://console.anthropic.com/)
-- **anthropic SDK**: `pip install anthropic`
-
-Set your API key:
-```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
+cost_agent = Agent(
+    name="cost-optimizer",
+    tools=(get_tools_by_category('cost') +
+           get_tools_by_category('cost_waste')),
+    model="anthropic.claude-3-5-haiku"
+)
 ```
 
-Or pass it directly:
+### 2. Standalone Tools (No AI)
+
+Use StrandKit tools directly without any agent framework:
+
 ```python
-agent = InfraDebuggerAgent(api_key="sk-ant-...")
+from strandkit import (
+    find_overpermissive_roles,
+    find_zombie_resources,
+    analyze_ec2_performance,
+    get_s3_cost_analysis
+)
+
+# Direct function calls
+risky_roles = find_overpermissive_roles()
+wasted_money = find_zombie_resources()
+slow_instances = analyze_ec2_performance("i-1234567890")
+s3_costs = get_s3_cost_analysis()
 ```
+
+### 3. Pre-built StrandKit Agents
+
+StrandKit includes example agents built with Claude API for quick prototyping:
+
+```python
+from strandkit import InfraDebuggerAgent
+
+# Quick prototype using Claude directly
+agent = InfraDebuggerAgent(api_key="sk-ant-...")
+result = agent.run("Why is my Lambda function failing?")
+```
+
+**Note**: These are simplified examples. For production, use AWS Strands Agents framework (option 1).
+
+## How StrandKit Extends Strands
+
+| Feature | AWS Strands Agents | StrandKit Adds |
+|---------|-------------------|----------------|
+| **Agent Framework** | ✅ Multi-agent orchestration | N/A (uses Strands) |
+| **AWS Tools** | ❌ You write them | ✅ 60 production-ready tools |
+| **Tool Schemas** | ✅ Tool definition format | ✅ Auto-generated for all tools |
+| **IAM Security** | ❌ Build yourself | ✅ 11 security audit tools |
+| **Cost Optimization** | ❌ Build yourself | ✅ 15 cost analysis tools |
+| **EC2 Analysis** | ❌ Build yourself | ✅ 10 compute tools |
+| **S3 Management** | ❌ Build yourself | ✅ 12 storage tools |
+| **CloudWatch** | ❌ Build yourself | ✅ 4 monitoring tools |
+
+**StrandKit = AWS tools for Strands**
+
+## Requirements
+
+**For AWS Strands Agents Integration:**
+- Python 3.8+
+- AWS credentials configured
+- `pip install strands-agents` ([docs](https://strandsagents.com/latest/))
+- `pip install strandkit` (from source currently)
+
+**For Standalone Tools:**
+- Python 3.8+
+- AWS credentials configured
+- `pip install boto3`
+
+**For StrandKit Example Agents:**
+- Python 3.8+
+- AWS credentials
+- Anthropic API key
+- `pip install anthropic`
 
 ## Features
 
