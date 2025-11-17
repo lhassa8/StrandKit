@@ -12,9 +12,11 @@ All tools return structured JSON that's easy for LLMs to process.
 
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
+from strands import tool
 from strandkit.core.aws_client import AWSClient
 
 
+@tool
 def get_lambda_logs(
     function_name: str,
     start_minutes: int = 60,
@@ -191,6 +193,7 @@ def get_lambda_logs(
         }
 
 
+@tool
 def get_metric(
     namespace: str,
     metric_name: str,

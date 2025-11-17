@@ -23,8 +23,10 @@ import csv
 import io
 
 from strandkit.core.aws_client import AWSClient
+from strands import tool
 
 
+@tool
 def analyze_iam_users(
     inactive_days: int = 90,
     aws_client: Optional[AWSClient] = None
@@ -258,6 +260,7 @@ def analyze_iam_users(
         return {'error': str(e)}
 
 
+@tool
 def analyze_access_keys(
     max_age_days: int = 90,
     aws_client: Optional[AWSClient] = None
@@ -446,6 +449,7 @@ def analyze_access_keys(
         return {'error': str(e)}
 
 
+@tool
 def analyze_mfa_compliance(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -642,6 +646,7 @@ def analyze_mfa_compliance(
         return {'error': str(e)}
 
 
+@tool
 def analyze_password_policy(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -860,6 +865,7 @@ def analyze_password_policy(
         return {'error': str(e)}
 
 
+@tool
 def find_cross_account_access(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -1049,6 +1055,7 @@ def find_cross_account_access(
         return {'error': str(e)}
 
 
+@tool
 def detect_privilege_escalation_paths(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -1361,6 +1368,7 @@ def detect_privilege_escalation_paths(
         return {'error': str(e)}
 
 
+@tool
 def analyze_unused_permissions(
     days_back: int = 90,
     aws_client: Optional[AWSClient] = None
@@ -1558,6 +1566,7 @@ def analyze_unused_permissions(
         return {'error': str(e)}
 
 
+@tool
 def get_iam_credential_report(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:

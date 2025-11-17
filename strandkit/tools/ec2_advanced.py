@@ -14,8 +14,10 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 from collections import defaultdict
 from strandkit.core.aws_client import AWSClient
+from strands import tool
 
 
+@tool
 def analyze_ec2_performance(
     instance_id: str,
     lookback_days: int = 7,
@@ -250,6 +252,7 @@ def analyze_ec2_performance(
         return {'error': str(e)}
 
 
+@tool
 def analyze_auto_scaling_groups(
     asg_name: Optional[str] = None,
     aws_client: Optional[AWSClient] = None
@@ -420,6 +423,7 @@ def analyze_auto_scaling_groups(
         return {'error': str(e)}
 
 
+@tool
 def analyze_load_balancers(
     lb_name: Optional[str] = None,
     aws_client: Optional[AWSClient] = None
@@ -651,6 +655,7 @@ def analyze_load_balancers(
         return {'error': str(e)}
 
 
+@tool
 def get_ec2_spot_recommendations(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:

@@ -1,309 +1,333 @@
 """
-Tool registry for Strands agents.
+Tool registry for AWS Strands Agents integration.
 
-This module provides a registry of all StrandKit tools with their schemas,
-organized by category for easy discovery and use.
+This module provides simple functions to get StrandKit tools for use with
+AWS Strands Agents. All tools are @tool-decorated functions ready to be
+passed directly to Strands Agent instances.
+
+Example:
+    from strands import Agent
+    from strandkit.strands import get_all_tools
+
+    agent = Agent(tools=get_all_tools())
+
+For v2.0.0: This module has been simplified to return decorated functions
+instead of schema dictionaries, for proper Strands integration.
 """
 
-from typing import List, Dict, Any, Optional
-from strandkit.strands.schemas import generate_tool_schema, create_tool_wrapper
-
-# Import all tools
-from strandkit.tools import (
-    # CloudWatch
-    get_lambda_logs, get_metric, get_log_insights, get_recent_errors,
-    # CloudFormation
-    explain_changeset,
-    # IAM
-    analyze_role, explain_policy, find_overpermissive_roles,
-    # IAM Security
-    analyze_iam_users, analyze_access_keys, analyze_mfa_compliance,
-    analyze_password_policy, find_cross_account_access,
-    detect_privilege_escalation_paths, analyze_unused_permissions,
-    get_iam_credential_report,
-    # Cost
-    get_cost_and_usage, get_cost_by_service, detect_cost_anomalies,
-    get_cost_forecast,
-    # Cost Analytics
-    get_budget_status, analyze_reserved_instances, analyze_savings_plans,
-    get_rightsizing_recommendations, analyze_commitment_savings,
-    find_cost_optimization_opportunities,
-    # Cost Waste
-    find_zombie_resources, analyze_idle_resources, analyze_snapshot_waste,
-    analyze_data_transfer_costs, get_cost_allocation_tags,
-    # EC2
-    analyze_ec2_instance, get_ec2_inventory, find_unused_resources,
-    analyze_security_group, find_overpermissive_security_groups,
-    # S3
-    analyze_s3_bucket, find_public_buckets, get_s3_cost_analysis,
-    analyze_bucket_access, find_unused_buckets,
-    # EBS
-    analyze_ebs_volumes, analyze_ebs_snapshots_lifecycle,
-    get_ebs_iops_recommendations, analyze_ebs_encryption,
-    find_ebs_volume_anomalies, analyze_ami_usage,
-    # S3 Advanced
-    analyze_s3_storage_classes, analyze_s3_lifecycle_policies,
-    find_s3_versioning_waste, find_incomplete_multipart_uploads,
-    analyze_s3_replication, analyze_s3_request_costs,
-    analyze_large_s3_objects,
-    # EC2 Advanced
-    analyze_ec2_performance, analyze_auto_scaling_groups,
-    analyze_load_balancers, get_ec2_spot_recommendations
-)
-
-# Tool categories for organization
-TOOL_CATEGORIES = {
-    'cloudwatch': {
-        'name': 'CloudWatch',
-        'description': 'Logs, metrics, and monitoring tools',
-        'tools': [
-            get_lambda_logs,
-            get_metric,
-            get_log_insights,
-            get_recent_errors
-        ]
-    },
-    'cloudformation': {
-        'name': 'CloudFormation',
-        'description': 'Infrastructure as code analysis',
-        'tools': [
-            explain_changeset
-        ]
-    },
-    'iam': {
-        'name': 'IAM',
-        'description': 'Identity and access management',
-        'tools': [
-            analyze_role,
-            explain_policy,
-            find_overpermissive_roles
-        ]
-    },
-    'iam_security': {
-        'name': 'IAM Security',
-        'description': 'Advanced IAM security auditing and compliance',
-        'tools': [
-            analyze_iam_users,
-            analyze_access_keys,
-            analyze_mfa_compliance,
-            analyze_password_policy,
-            find_cross_account_access,
-            detect_privilege_escalation_paths,
-            analyze_unused_permissions,
-            get_iam_credential_report
-        ]
-    },
-    'cost': {
-        'name': 'Cost Explorer',
-        'description': 'Cost analysis and forecasting',
-        'tools': [
-            get_cost_and_usage,
-            get_cost_by_service,
-            detect_cost_anomalies,
-            get_cost_forecast
-        ]
-    },
-    'cost_analytics': {
-        'name': 'Cost Analytics',
-        'description': 'Advanced cost optimization and savings',
-        'tools': [
-            get_budget_status,
-            analyze_reserved_instances,
-            analyze_savings_plans,
-            get_rightsizing_recommendations,
-            analyze_commitment_savings,
-            find_cost_optimization_opportunities
-        ]
-    },
-    'cost_waste': {
-        'name': 'Cost Waste Detection',
-        'description': 'Find wasted spend and unused resources',
-        'tools': [
-            find_zombie_resources,
-            analyze_idle_resources,
-            analyze_snapshot_waste,
-            analyze_data_transfer_costs,
-            get_cost_allocation_tags
-        ]
-    },
-    'ec2': {
-        'name': 'EC2',
-        'description': 'EC2 instance and security group analysis',
-        'tools': [
-            analyze_ec2_instance,
-            get_ec2_inventory,
-            find_unused_resources,
-            analyze_security_group,
-            find_overpermissive_security_groups
-        ]
-    },
-    's3': {
-        'name': 'S3',
-        'description': 'S3 bucket security and cost optimization',
-        'tools': [
-            analyze_s3_bucket,
-            find_public_buckets,
-            get_s3_cost_analysis,
-            analyze_bucket_access,
-            find_unused_buckets
-        ]
-    },
-    'ebs': {
-        'name': 'EBS',
-        'description': 'EBS volume and snapshot optimization',
-        'tools': [
-            analyze_ebs_volumes,
-            analyze_ebs_snapshots_lifecycle,
-            get_ebs_iops_recommendations,
-            analyze_ebs_encryption,
-            find_ebs_volume_anomalies,
-            analyze_ami_usage
-        ]
-    },
-    's3_advanced': {
-        'name': 'S3 Advanced',
-        'description': 'Advanced S3 storage optimization',
-        'tools': [
-            analyze_s3_storage_classes,
-            analyze_s3_lifecycle_policies,
-            find_s3_versioning_waste,
-            find_incomplete_multipart_uploads,
-            analyze_s3_replication,
-            analyze_s3_request_costs,
-            analyze_large_s3_objects
-        ]
-    },
-    'ec2_advanced': {
-        'name': 'EC2 Advanced',
-        'description': 'Advanced EC2 performance and optimization',
-        'tools': [
-            analyze_ec2_performance,
-            analyze_auto_scaling_groups,
-            analyze_load_balancers,
-            get_ec2_spot_recommendations
-        ]
-    }
-}
+from typing import List, Any
 
 
-def get_all_tools() -> List[Dict[str, Any]]:
+def get_all_tools() -> List[Any]:
     """
-    Get all StrandKit tools with their schemas.
+    Get all 60 StrandKit tools as @tool-decorated functions.
+
+    Returns list of functions ready to pass to Strands Agent.
+
+    Usage:
+        from strands import Agent
+        from strandkit.strands import get_all_tools
+
+        agent = Agent(
+            model="anthropic.claude-3-5-haiku",
+            tools=get_all_tools()
+        )
 
     Returns:
-        List of tool dictionaries with name, description, schema, and function
-
-    Example:
-        >>> tools = get_all_tools()
-        >>> len(tools)
-        60
-        >>> tools[0]['name']
-        'get_lambda_logs'
+        List of 60 @tool-decorated functions organized by category:
+        - CloudWatch: 4 tools
+        - CloudFormation: 1 tool
+        - IAM: 3 tools
+        - IAM Security: 8 tools
+        - Cost: 4 tools
+        - Cost Analytics: 6 tools
+        - Cost Waste: 5 tools
+        - EC2: 5 tools
+        - EC2 Advanced: 4 tools
+        - S3: 5 tools
+        - S3 Advanced: 7 tools
+        - EBS: 6 tools
     """
-    all_tools = []
+    # Import all tool modules
+    from strandkit.tools import (
+        # CloudWatch modules
+        cloudwatch, cloudwatch_enhanced,
+        # Other modules
+        cloudformation, iam, iam_security,
+        cost, cost_analytics, cost_waste,
+        ec2, ec2_advanced, s3, s3_advanced, ebs
+    )
 
-    for category_info in TOOL_CATEGORIES.values():
-        for func in category_info['tools']:
-            schema = generate_tool_schema(func)
-            tool = create_tool_wrapper(func, schema)
-            tool['category'] = category_info['name']
-            all_tools.append(tool)
+    return [
+        # CloudWatch (4 tools)
+        cloudwatch.get_lambda_logs,
+        cloudwatch.get_metric,
+        cloudwatch_enhanced.get_log_insights,
+        cloudwatch_enhanced.get_recent_errors,
 
-    return all_tools
+        # CloudFormation (1 tool)
+        cloudformation.explain_changeset,
+
+        # IAM (3 tools)
+        iam.analyze_role,
+        iam.explain_policy,
+        iam.find_overpermissive_roles,
+
+        # IAM Security (8 tools)
+        iam_security.analyze_iam_users,
+        iam_security.analyze_access_keys,
+        iam_security.analyze_mfa_compliance,
+        iam_security.analyze_password_policy,
+        iam_security.find_cross_account_access,
+        iam_security.detect_privilege_escalation_paths,
+        iam_security.analyze_unused_permissions,
+        iam_security.get_iam_credential_report,
+
+        # Cost (4 tools)
+        cost.get_cost_and_usage,
+        cost.get_cost_by_service,
+        cost.detect_cost_anomalies,
+        cost.get_cost_forecast,
+
+        # Cost Analytics (6 tools)
+        cost_analytics.get_budget_status,
+        cost_analytics.analyze_reserved_instances,
+        cost_analytics.analyze_savings_plans,
+        cost_analytics.get_rightsizing_recommendations,
+        cost_analytics.analyze_commitment_savings,
+        cost_analytics.find_cost_optimization_opportunities,
+
+        # Cost Waste (5 tools)
+        cost_waste.find_zombie_resources,
+        cost_waste.analyze_idle_resources,
+        cost_waste.analyze_snapshot_waste,
+        cost_waste.analyze_data_transfer_costs,
+        cost_waste.get_cost_allocation_tags,
+
+        # EC2 (5 tools)
+        ec2.analyze_ec2_instance,
+        ec2.get_ec2_inventory,
+        ec2.find_unused_resources,
+        ec2.analyze_security_group,
+        ec2.find_overpermissive_security_groups,
+
+        # EC2 Advanced (4 tools)
+        ec2_advanced.analyze_ec2_performance,
+        ec2_advanced.analyze_auto_scaling_groups,
+        ec2_advanced.analyze_load_balancers,
+        ec2_advanced.get_ec2_spot_recommendations,
+
+        # S3 (5 tools)
+        s3.analyze_s3_bucket,
+        s3.find_public_buckets,
+        s3.get_s3_cost_analysis,
+        s3.analyze_bucket_access,
+        s3.find_unused_buckets,
+
+        # S3 Advanced (7 tools)
+        s3_advanced.analyze_s3_storage_classes,
+        s3_advanced.analyze_s3_lifecycle_policies,
+        s3_advanced.find_s3_versioning_waste,
+        s3_advanced.find_incomplete_multipart_uploads,
+        s3_advanced.analyze_s3_replication,
+        s3_advanced.analyze_s3_request_costs,
+        s3_advanced.analyze_large_s3_objects,
+
+        # EBS (6 tools)
+        ebs.analyze_ebs_volumes,
+        ebs.analyze_ebs_snapshots_lifecycle,
+        ebs.get_ebs_iops_recommendations,
+        ebs.analyze_ebs_encryption,
+        ebs.find_ebs_volume_anomalies,
+        ebs.analyze_ami_usage,
+    ]
 
 
-def get_tools_by_category(category: str) -> List[Dict[str, Any]]:
+def get_tools_by_category(category: str) -> List[Any]:
     """
     Get tools for a specific category.
 
     Args:
-        category: Category key (e.g., 'iam', 'cost', 'ec2')
+        category: Tool category name. Available categories:
+            - 'cloudwatch': CloudWatch Logs and Metrics (4 tools)
+            - 'cloudformation': CloudFormation changesets (1 tool)
+            - 'iam': IAM role and policy analysis (3 tools)
+            - 'iam_security': IAM security auditing (8 tools)
+            - 'cost': Cost Explorer (4 tools)
+            - 'cost_analytics': Cost optimization (6 tools)
+            - 'cost_waste': Waste detection (5 tools)
+            - 'ec2': EC2 instance analysis (5 tools)
+            - 'ec2_advanced': EC2 performance/scaling (4 tools)
+            - 's3': S3 bucket analysis (5 tools)
+            - 's3_advanced': S3 optimization (7 tools)
+            - 'ebs': EBS volume optimization (6 tools)
 
     Returns:
-        List of tools in that category
+        List of @tool-decorated functions for the category
 
-    Example:
-        >>> iam_tools = get_tools_by_category('iam')
-        >>> len(iam_tools)
-        3
+    Usage:
+        from strands import Agent
+        from strandkit.strands import get_tools_by_category
+
+        # Security-focused agent
+        agent = Agent(tools=(
+            get_tools_by_category('iam') +
+            get_tools_by_category('iam_security') +
+            get_tools_by_category('ec2')
+        ))
+
+        # Cost optimization agent
+        agent = Agent(tools=(
+            get_tools_by_category('cost') +
+            get_tools_by_category('cost_analytics') +
+            get_tools_by_category('cost_waste')
+        ))
     """
-    if category not in TOOL_CATEGORIES:
-        raise ValueError(f"Unknown category: {category}. Use list_tool_categories() to see available categories.")
+    # Import modules on-demand
+    if category == 'cloudwatch':
+        from strandkit.tools import cloudwatch, cloudwatch_enhanced
+        return [
+            cloudwatch.get_lambda_logs,
+            cloudwatch.get_metric,
+            cloudwatch_enhanced.get_log_insights,
+            cloudwatch_enhanced.get_recent_errors,
+        ]
 
-    category_info = TOOL_CATEGORIES[category]
-    tools = []
+    elif category == 'cloudformation':
+        from strandkit.tools import cloudformation
+        return [cloudformation.explain_changeset]
 
-    for func in category_info['tools']:
-        schema = generate_tool_schema(func)
-        tool = create_tool_wrapper(func, schema)
-        tool['category'] = category_info['name']
-        tools.append(tool)
+    elif category == 'iam':
+        from strandkit.tools import iam
+        return [
+            iam.analyze_role,
+            iam.explain_policy,
+            iam.find_overpermissive_roles,
+        ]
 
-    return tools
+    elif category == 'iam_security':
+        from strandkit.tools import iam_security
+        return [
+            iam_security.analyze_iam_users,
+            iam_security.analyze_access_keys,
+            iam_security.analyze_mfa_compliance,
+            iam_security.analyze_password_policy,
+            iam_security.find_cross_account_access,
+            iam_security.detect_privilege_escalation_paths,
+            iam_security.analyze_unused_permissions,
+            iam_security.get_iam_credential_report,
+        ]
+
+    elif category == 'cost':
+        from strandkit.tools import cost
+        return [
+            cost.get_cost_and_usage,
+            cost.get_cost_by_service,
+            cost.detect_cost_anomalies,
+            cost.get_cost_forecast,
+        ]
+
+    elif category == 'cost_analytics':
+        from strandkit.tools import cost_analytics
+        return [
+            cost_analytics.get_budget_status,
+            cost_analytics.analyze_reserved_instances,
+            cost_analytics.analyze_savings_plans,
+            cost_analytics.get_rightsizing_recommendations,
+            cost_analytics.analyze_commitment_savings,
+            cost_analytics.find_cost_optimization_opportunities,
+        ]
+
+    elif category == 'cost_waste':
+        from strandkit.tools import cost_waste
+        return [
+            cost_waste.find_zombie_resources,
+            cost_waste.analyze_idle_resources,
+            cost_waste.analyze_snapshot_waste,
+            cost_waste.analyze_data_transfer_costs,
+            cost_waste.get_cost_allocation_tags,
+        ]
+
+    elif category == 'ec2':
+        from strandkit.tools import ec2
+        return [
+            ec2.analyze_ec2_instance,
+            ec2.get_ec2_inventory,
+            ec2.find_unused_resources,
+            ec2.analyze_security_group,
+            ec2.find_overpermissive_security_groups,
+        ]
+
+    elif category == 'ec2_advanced':
+        from strandkit.tools import ec2_advanced
+        return [
+            ec2_advanced.analyze_ec2_performance,
+            ec2_advanced.analyze_auto_scaling_groups,
+            ec2_advanced.analyze_load_balancers,
+            ec2_advanced.get_ec2_spot_recommendations,
+        ]
+
+    elif category == 's3':
+        from strandkit.tools import s3
+        return [
+            s3.analyze_s3_bucket,
+            s3.find_public_buckets,
+            s3.get_s3_cost_analysis,
+            s3.analyze_bucket_access,
+            s3.find_unused_buckets,
+        ]
+
+    elif category == 's3_advanced':
+        from strandkit.tools import s3_advanced
+        return [
+            s3_advanced.analyze_s3_storage_classes,
+            s3_advanced.analyze_s3_lifecycle_policies,
+            s3_advanced.find_s3_versioning_waste,
+            s3_advanced.find_incomplete_multipart_uploads,
+            s3_advanced.analyze_s3_replication,
+            s3_advanced.analyze_s3_request_costs,
+            s3_advanced.analyze_large_s3_objects,
+        ]
+
+    elif category == 'ebs':
+        from strandkit.tools import ebs
+        return [
+            ebs.analyze_ebs_volumes,
+            ebs.analyze_ebs_snapshots_lifecycle,
+            ebs.get_ebs_iops_recommendations,
+            ebs.analyze_ebs_encryption,
+            ebs.find_ebs_volume_anomalies,
+            ebs.analyze_ami_usage,
+        ]
+
+    else:
+        return []
 
 
-def get_tool(name: str) -> Optional[Dict[str, Any]]:
-    """
-    Get a specific tool by name.
-
-    Args:
-        name: Tool function name (e.g., 'find_overpermissive_roles')
-
-    Returns:
-        Tool dictionary or None if not found
-
-    Example:
-        >>> tool = get_tool('find_overpermissive_roles')
-        >>> tool['name']
-        'find_overpermissive_roles'
-    """
-    all_tools = get_all_tools()
-
-    for tool in all_tools:
-        if tool['name'] == name:
-            return tool
-
-    return None
-
-
-def list_tool_categories() -> Dict[str, str]:
+def list_tool_categories() -> List[str]:
     """
     List all available tool categories.
 
     Returns:
-        Dictionary mapping category keys to descriptions
+        List of category names
 
-    Example:
-        >>> categories = list_tool_categories()
-        >>> categories['iam']
-        'Identity and access management'
+    Usage:
+        from strandkit.strands import list_tool_categories
+
+        categories = list_tool_categories()
+        print(f"Available categories: {', '.join(categories)}")
     """
-    return {
-        key: info['description']
-        for key, info in TOOL_CATEGORIES.items()
-    }
-
-
-def get_category_summary() -> Dict[str, Any]:
-    """
-    Get summary statistics for each category.
-
-    Returns:
-        Dictionary with category statistics
-
-    Example:
-        >>> summary = get_category_summary()
-        >>> summary['iam']['tool_count']
-        3
-    """
-    summary = {}
-
-    for key, info in TOOL_CATEGORIES.items():
-        summary[key] = {
-            'name': info['name'],
-            'description': info['description'],
-            'tool_count': len(info['tools']),
-            'tools': [func.__name__ for func in info['tools']]
-        }
-
-    return summary
+    return [
+        'cloudwatch',
+        'cloudformation',
+        'iam',
+        'iam_security',
+        'cost',
+        'cost_analytics',
+        'cost_waste',
+        'ec2',
+        'ec2_advanced',
+        's3',
+        's3_advanced',
+        'ebs',
+    ]

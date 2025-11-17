@@ -134,8 +134,20 @@ agent = Agent(
 )
 
 # Agent can now use any StrandKit tool
-response = agent.run("Find security risks in my IAM roles")
+response = agent("Find security risks in my IAM roles")
 # Agent automatically calls find_overpermissive_roles() and explains findings
+```
+
+**Using ToolProvider (Lazy Loading):**
+```python
+from strands import Agent
+from strandkit.strands import StrandKitToolProvider
+
+# Tools are loaded only when agent needs them
+agent = Agent(
+    tools=[StrandKitToolProvider()],
+    model="anthropic.claude-3-5-haiku"
+)
 ```
 
 **Tool Selection by Category:**

@@ -1,34 +1,54 @@
 """
-Strands Integration for StrandKit.
+Strands Integration for StrandKit v2.0.
 
-This module provides AWS Strands agent integration, allowing StrandKit tools
-to be used with AI agents that can reason about AWS infrastructure.
+This module provides integration with AWS Strands Agents framework,
+allowing StrandKit's 60 AWS tools to be used with Strands AI agents.
 
-Usage:
-    # Get all tools for your agent
+Usage with AWS Strands Agents (Recommended):
+    from strands import Agent
     from strandkit.strands import get_all_tools
-    tools = get_all_tools()
 
-    # Get tools by category
+    # Create agent with all 60 tools
+    agent = Agent(
+        model="anthropic.claude-3-5-haiku",
+        tools=get_all_tools()
+    )
+
+    # Or use ToolProvider (lazy-loading)
+    from strandkit.strands import StrandKitToolProvider
+    agent = Agent(tools=[StrandKitToolProvider()])
+
+    # Or by category
     from strandkit.strands import get_tools_by_category
-    iam_tools = get_tools_by_category('iam')
+    agent = Agent(tools=(
+        get_tools_by_category('iam') +
+        get_tools_by_category('cost')
+    ))
 
-    # Use pre-built agents
-    from strandkit.strands.agents import InfraDebuggerAgent
-    agent = InfraDebuggerAgent()
-    response = agent.run("Why is my Lambda function failing?")
+    # Or category provider
+    from strandkit.strands import StrandKitCategoryProvider
+    agent = Agent(tools=[
+        StrandKitCategoryProvider(['iam', 'cost', 'ec2'])
+    ])
 """
 
 from strandkit.strands.registry import (
     get_all_tools,
     get_tools_by_category,
-    get_tool,
     list_tool_categories
 )
 
+from strandkit.strands.provider import (
+    StrandKitToolProvider,
+    StrandKitCategoryProvider
+)
+
 __all__ = [
+    # Registry functions
     'get_all_tools',
     'get_tools_by_category',
-    'get_tool',
-    'list_tool_categories'
+    'list_tool_categories',
+    # ToolProviders
+    'StrandKitToolProvider',
+    'StrandKitCategoryProvider',
 ]

@@ -16,12 +16,14 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 import statistics
 from strandkit.core.aws_client import AWSClient
+from strands import tool
 
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
 
+@tool
 def _safe_float(value: Any, default: float = 0.0) -> float:
     """Safely convert value to float."""
     if value is None:
@@ -38,6 +40,7 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
     return default
 
 
+@tool
 def _calculate_ebs_cost(size_gb: int, volume_type: str = "gp3") -> float:
     """Calculate monthly EBS cost."""
     # Pricing per GB/month (approximate us-east-1)
@@ -54,30 +57,35 @@ def _calculate_ebs_cost(size_gb: int, volume_type: str = "gp3") -> float:
     return size_gb * price_per_gb
 
 
+@tool
 def _calculate_snapshot_cost(size_gb: int) -> float:
     """Calculate monthly snapshot cost."""
     # $0.05 per GB-month for snapshots
     return size_gb * 0.05
 
 
+@tool
 def _calculate_eip_cost() -> float:
     """Calculate monthly cost for unused Elastic IP."""
     # $3.65 per month for unused EIP
     return 3.65
 
 
+@tool
 def _calculate_nat_gateway_cost() -> float:
     """Calculate monthly NAT Gateway cost."""
     # $32.85 per month + data processing
     return 32.85
 
 
+@tool
 def _calculate_alb_cost() -> float:
     """Calculate monthly Application Load Balancer cost."""
     # $16.20 per month base + LCU costs
     return 16.20
 
 
+@tool
 def _days_ago(date_obj: datetime) -> int:
     """Calculate days since date."""
     if date_obj.tzinfo is None:
@@ -90,6 +98,7 @@ def _days_ago(date_obj: datetime) -> int:
 # Tool 1: Find Zombie Resources
 # ============================================================================
 
+@tool
 def find_zombie_resources(
     min_age_days: int = 30,
     aws_client: Optional[AWSClient] = None
@@ -367,6 +376,7 @@ def find_zombie_resources(
 # Tool 2: Analyze Idle Resources
 # ============================================================================
 
+@tool
 def analyze_idle_resources(
     cpu_threshold: float = 5.0,
     lookback_days: int = 7,
@@ -512,6 +522,7 @@ def analyze_idle_resources(
 # Tool 3: Analyze Snapshot Waste
 # ============================================================================
 
+@tool
 def analyze_snapshot_waste(
     min_age_days: int = 90,
     aws_client: Optional[AWSClient] = None
@@ -662,6 +673,7 @@ def analyze_snapshot_waste(
 # Tool 4: Analyze Data Transfer Costs
 # ============================================================================
 
+@tool
 def analyze_data_transfer_costs(
     days_back: int = 30,
     aws_client: Optional[AWSClient] = None
@@ -777,6 +789,7 @@ def analyze_data_transfer_costs(
 # Tool 5: Get Cost Allocation Tags
 # ============================================================================
 
+@tool
 def get_cost_allocation_tags(
     required_tags: Optional[List[str]] = None,
     aws_client: Optional[AWSClient] = None

@@ -9,9 +9,11 @@ Additional advanced CloudWatch functionality:
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
 import time
+from strands import tool
 from strandkit.core.aws_client import AWSClient
 
 
+@tool
 def get_log_insights(
     log_group_names: List[str],
     query_string: str,
@@ -201,6 +203,7 @@ def get_log_insights(
         }
 
 
+@tool
 def get_recent_errors(
     log_group_pattern: str = "/aws/lambda/",
     start_minutes: int = 60,

@@ -10,8 +10,10 @@ before they're applied.
 
 from typing import Any, Dict, List, Optional
 from strandkit.core.aws_client import AWSClient
+from strands import tool
 
 
+@tool
 def explain_changeset(
     changeset_name: str,
     stack_name: str,
@@ -262,6 +264,7 @@ def explain_changeset(
         }
 
 
+@tool
 def _determine_risk_level(
     resource_type: str,
     action: str,
@@ -306,6 +309,7 @@ def _determine_risk_level(
     return "low"
 
 
+@tool
 def _generate_change_explanation(
     resource_type: str,
     logical_id: str,

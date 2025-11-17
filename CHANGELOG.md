@@ -5,6 +5,239 @@ All notable changes to StrandKit will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-11-17
+
+### 🚨 BREAKING CHANGES
+
+**StrandKit v2.0 is a complete rewrite for proper AWS Strands Agents integration.**
+
+This release transforms StrandKit from having its own custom agent framework to being a true companion SDK for the official AWS Strands Agents framework. All 60 tools now use the `@tool` decorator from Strands and work seamlessly with Strands Agent instances.
+
+**Migration Required**: See [Migration Guide](#migration-from-v100-to-v200) below.
+
+### Added
+
+#### ✨ Full AWS Strands Integration
+
+- **`@tool` decorators on all 60 functions** - All StrandKit tools now use Strands' `@tool` decorator
+  - Tools work seamlessly with `strands.Agent`
+  - Automatic schema generation by Strands framework
+  - Tools remain callable standalone (backward compatible!)
+
+- **`StrandKitToolProvider`** - Lazy-loading ToolProvider for all 60 tools
+  - Implements Strands' ToolProvider interface
+  - Tools loaded on-demand when agent needs them
+  - Usage: `Agent(tools=[StrandKitToolProvider()])`
+
+- **`StrandKitCategoryProvider`** - Category-based ToolProvider
+  - Load only specific tool categories
+  - Perfect for specialized agents
+  - Usage: `Agent(tools=[StrandKitCategoryProvider(['iam', 'cost'])])`
+
+- **Updated `get_all_tools()`** - Now returns decorated functions instead of schemas
+  - Returns list of `@tool`-decorated functions
+  - Ready to pass directly to `strands.Agent`
+  - No more manual schema management
+
+- **Updated `get_tools_by_category()`** - Returns decorated functions by category
+  - Simplified implementation
+  - On-demand module imports
+  - Combines easily: `get_tools_by_category('iam') + get_tools_by_category('cost')`
+
+- **New example**: `examples/strands_integration.py`
+  - 9 comprehensive examples
+  - Shows all integration patterns
+  - Multi-agent systems
+  - Specialized agents (security, cost, debugging)
+  - 250+ lines of documented examples
+
+### Changed
+
+#### 🔧 Core Architecture
+
+- **requirements.txt** - Added `strands-agents>=0.1.0` as core dependency
+- **strandkit/strands/registry.py** - Complete rewrite (360 lines → 334 lines)
+  - Removed schema generation logic
+  - Now returns decorated functions
+  - Simplified category mapping
+  - On-demand imports for performance
+
+- **strandkit/strands/__init__.py** - Updated exports
+  - Added `StrandKitToolProvider` export
+  - Added `StrandKitCategoryProvider` export
+  - Removed `get_tool()` (not needed)
+  - Updated docstring with v2.0 usage
+
+- **All 60 tool files** - Added `from strands import tool` import
+  - cloudwatch.py
+  - cloudwatch_enhanced.py
+  - cloudformation.py
+  - iam.py
+  - iam_security.py
+  - cost.py
+  - cost_analytics.py
+  - cost_waste.py
+  - ec2.py
+  - ec2_advanced.py
+  - s3.py
+  - s3_advanced.py
+  - ebs.py
+
+- **README.md** - Updated with v2.0 examples
+  - Added ToolProvider usage
+  - Updated "Three Ways to Use StrandKit" section
+  - All examples use real Strands Agent API
+  - Removed custom BaseAgent examples from main docs
+
+### Removed
+
+#### 🗑️ Deprecated Components
+
+- **strandkit/strands/schemas.py** - Deleted (170 lines)
+  - No longer needed - Strands handles schema generation
+  - `generate_tool_schema()` removed
+  - `create_tool_wrapper()` removed
+
+- **strandkit.strands.get_tool()** - Removed from exports
+  - Not compatible with Strands usage pattern
+  - Use `get_all_tools()` or `get_tools_by_category()` instead
+
+### Fixed
+
+- **Strands compatibility** - Now properly integrated with AWS Strands framework
+  - Tools return plain values (dict, str, int) - Strands handles formatting
+  - Tool inputs validated by Strands using `@tool` decorator
+  - Agent loop managed by Strands framework
+
+### Documentation
+
+- **STRANDS_INTEGRATION_ANALYSIS.md** - Comprehensive deep-dive document
+  - How Strands actually works
+  - Compatibility analysis
+  - Migration guidance
+  - 400+ lines of technical documentation
+
+- **README.md** - Major updates
+  - Corrected positioning as Strands companion
+  - Updated all integration examples
+  - Added ToolProvider patterns
+  - Removed misleading custom agent examples
+
+- **examples/strands_integration.py** - Complete example suite
+  - All 60 tools example
+  - ToolProvider examples
+  - Specialized agents (security, cost, debugging)
+  - Multi-agent systems
+  - Standalone usage
+  - Category listings
+
+### Migration from v1.0.0 to v2.0.0
+
+#### If You Used Custom BaseAgent (v1.0)
+
+**Before (v1.0.0):**
+```python
+from strandkit import InfraDebuggerAgent
+
+agent = InfraDebuggerAgent(api_key="sk-ant-...")
+result = agent.run("Find IAM security issues")
+print(result['answer'])
+```
+
+**After (v2.0.0) - Use Strands:**
+```python
+from strands import Agent
+from strandkit.strands import get_all_tools
+
+agent = Agent(
+    model="anthropic.claude-3-5-haiku",
+    tools=get_all_tools()
+)
+
+response = agent("Find IAM security issues")
+print(response)
+```
+
+#### If You Used Standalone Tools (v1.0)
+
+**No changes needed!** Tools still work standalone:
+
+```python
+from strandkit import find_overpermissive_roles
+
+# This still works exactly the same
+results = find_overpermissive_roles()
+print(results['summary'])
+```
+
+#### If You Used Registry Functions (v1.0)
+
+**Before (v1.0.0):**
+```python
+from strandkit.strands import get_all_tools
+
+tools = get_all_tools()  # Returned list of schema dicts
+for tool in tools:
+    print(tool['name'], tool['description'])
+```
+
+**After (v2.0.0):**
+```python
+from strandkit.strands import get_all_tools
+
+tools = get_all_tools()  # Now returns list of @tool-decorated functions
+# Pass directly to Strands Agent
+from strands import Agent
+agent = Agent(tools=tools)
+```
+
+### Installation
+
+**New Requirements:**
+```bash
+pip install strands-agents>=0.1.0
+pip install strandkit  # (from source for now)
+pip install boto3
+```
+
+**Optional (for examples):**
+```bash
+pip install anthropic  # For Claude models with Strands
+```
+
+### Breaking Changes Summary
+
+| Component | v1.0.0 | v2.0.0 | Breaking? |
+|-----------|--------|--------|-----------|
+| **Tool decoration** | None | `@tool` decorator | ❌ No (transparent) |
+| **`get_all_tools()`** | Returns schemas | Returns functions | ✅ YES |
+| **`get_tools_by_category()`** | Returns schemas | Returns functions | ✅ YES |
+| **`get_tool()`** | Available | Removed | ✅ YES |
+| **BaseAgent** | Custom implementation | Use `strands.Agent` | ✅ YES |
+| **Standalone tools** | Works | Works (unchanged) | ❌ No |
+| **Tool return values** | Dict/JSON | Dict/JSON (unchanged) | ❌ No |
+
+### Value Proposition
+
+**v2.0.0 Benefits:**
+
+1. **Official AWS Framework** - Built on AWS Strands, not custom code
+2. **Model Agnostic** - Use Claude, Bedrock, OpenAI, Gemini, Ollama
+3. **Multi-Agent Support** - Agent swarms, handoffs, graph workflows
+4. **Enterprise Features** - Memory, observability, guardrails from Strands
+5. **MCP Integration** - Use Model Context Protocol tools alongside StrandKit
+6. **Less Maintenance** - Removed 500+ lines of custom agent code
+7. **Better Ecosystem** - Part of official Strands ecosystem
+
+**What You Get:**
+- Same 60 production-ready AWS tools
+- Now properly integrated with Strands
+- Backward compatible for standalone usage
+- Better documentation and examples
+- Official AWS framework support
+
+---
+
 ## [1.0.0] - 2025-11-17
 
 ### Added

@@ -21,8 +21,10 @@ except ImportError:
     NoCredentialsError = Exception
 
 from strandkit.core.aws_client import AWSClient
+from strands import tool
 
 
+@tool
 def analyze_s3_bucket(
     bucket_name: str,
     aws_client: Optional[AWSClient] = None
@@ -129,6 +131,7 @@ def analyze_s3_bucket(
         }
 
 
+@tool
 def find_public_buckets(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -224,6 +227,7 @@ def find_public_buckets(
         }
 
 
+@tool
 def get_s3_cost_analysis(
     days_back: int = 30,
     aws_client: Optional[AWSClient] = None
@@ -346,6 +350,7 @@ def get_s3_cost_analysis(
         }
 
 
+@tool
 def analyze_bucket_access(
     bucket_name: str,
     aws_client: Optional[AWSClient] = None
@@ -412,6 +417,7 @@ def analyze_bucket_access(
         }
 
 
+@tool
 def find_unused_buckets(
     min_age_days: int = 90,
     aws_client: Optional[AWSClient] = None
@@ -529,6 +535,7 @@ def find_unused_buckets(
 
 # Helper functions
 
+@tool
 def _analyze_bucket_security(s3_client, bucket_name: str) -> Dict[str, Any]:
     """Analyze bucket security settings."""
     security = {}
@@ -592,6 +599,7 @@ def _analyze_bucket_security(s3_client, bucket_name: str) -> Dict[str, Any]:
     return security
 
 
+@tool
 def _analyze_bucket_storage(s3_client, bucket_name: str) -> Dict[str, Any]:
     """Analyze bucket storage metrics."""
     storage = {
@@ -623,6 +631,7 @@ def _analyze_bucket_storage(s3_client, bucket_name: str) -> Dict[str, Any]:
     return storage
 
 
+@tool
 def _analyze_bucket_configuration(s3_client, bucket_name: str) -> Dict[str, Any]:
     """Analyze bucket configuration."""
     config = {}
@@ -672,6 +681,7 @@ def _analyze_bucket_configuration(s3_client, bucket_name: str) -> Dict[str, Any]
     return config
 
 
+@tool
 def _estimate_bucket_cost(storage: Dict[str, Any]) -> Dict[str, Any]:
     """Estimate monthly bucket cost (rough estimates)."""
     # Simplified pricing (US East)
@@ -693,6 +703,7 @@ def _estimate_bucket_cost(storage: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+@tool
 def _assess_bucket_risk(security: Dict[str, Any], configuration: Dict[str, Any]) -> Dict[str, Any]:
     """Assess overall bucket security risk."""
     risk_level = 'low'
@@ -724,6 +735,7 @@ def _assess_bucket_risk(security: Dict[str, Any], configuration: Dict[str, Any])
     }
 
 
+@tool
 def _generate_bucket_recommendations(
     security: Dict[str, Any],
     configuration: Dict[str, Any],
@@ -763,6 +775,7 @@ def _generate_bucket_recommendations(
     return recommendations
 
 
+@tool
 def _check_bucket_public_access(s3_client, bucket_name: str) -> Dict[str, Any]:
     """Check if bucket has public access."""
     is_public = False
@@ -826,6 +839,7 @@ def _check_bucket_public_access(s3_client, bucket_name: str) -> Dict[str, Any]:
     }
 
 
+@tool
 def _check_bucket_logging(s3_client, bucket_name: str) -> Dict[str, Any]:
     """Check bucket access logging configuration."""
     try:
@@ -843,6 +857,7 @@ def _check_bucket_logging(s3_client, bucket_name: str) -> Dict[str, Any]:
         return {"enabled": False, "error": "Could not determine logging status"}
 
 
+@tool
 def _find_s3_optimization_opportunities(
     buckets: List[Dict[str, Any]],
     s3_client

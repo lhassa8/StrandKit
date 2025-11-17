@@ -22,6 +22,7 @@ from typing import Dict, Any, List, Optional
 from collections import defaultdict
 
 from strandkit.core.aws_client import AWSClient
+from strands import tool
 
 
 # S3 Storage Pricing (us-east-1, per GB-month)
@@ -42,6 +43,7 @@ S3_REQUEST_PRICING = {
 }
 
 
+@tool
 def analyze_s3_storage_classes(
     days_back: int = 90,
     aws_client: Optional[AWSClient] = None
@@ -156,6 +158,7 @@ def analyze_s3_storage_classes(
         return {'error': str(e)}
 
 
+@tool
 def analyze_s3_lifecycle_policies(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -258,6 +261,7 @@ def analyze_s3_lifecycle_policies(
         return {'error': str(e)}
 
 
+@tool
 def find_s3_versioning_waste(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -354,6 +358,7 @@ def find_s3_versioning_waste(
         return {'error': str(e)}
 
 
+@tool
 def find_incomplete_multipart_uploads(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -433,6 +438,7 @@ def find_incomplete_multipart_uploads(
         return {'error': str(e)}
 
 
+@tool
 def analyze_s3_replication(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -513,6 +519,7 @@ def analyze_s3_replication(
         return {'error': str(e)}
 
 
+@tool
 def analyze_s3_request_costs(
     days_back: int = 30,
     aws_client: Optional[AWSClient] = None
@@ -592,6 +599,7 @@ def analyze_s3_request_costs(
         return {'error': str(e)}
 
 
+@tool
 def analyze_large_s3_objects(
     size_threshold_gb: int = 5,
     aws_client: Optional[AWSClient] = None

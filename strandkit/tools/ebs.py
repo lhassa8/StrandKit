@@ -21,6 +21,7 @@ from typing import Dict, Any, List, Optional
 from collections import defaultdict
 
 from strandkit.core.aws_client import AWSClient
+from strands import tool
 
 
 # EBS Pricing (us-east-1, per GB-month)
@@ -47,6 +48,7 @@ THROUGHPUT_PRICING = {
 }
 
 
+@tool
 def analyze_ebs_volumes(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -254,6 +256,7 @@ def analyze_ebs_volumes(
         return {'error': str(e)}
 
 
+@tool
 def analyze_ebs_snapshots_lifecycle(
     min_age_days: int = 90,
     aws_client: Optional[AWSClient] = None
@@ -457,6 +460,7 @@ def analyze_ebs_snapshots_lifecycle(
         return {'error': str(e)}
 
 
+@tool
 def get_ebs_iops_recommendations(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -646,6 +650,7 @@ def get_ebs_iops_recommendations(
         return {'error': str(e)}
 
 
+@tool
 def analyze_ebs_encryption(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -811,6 +816,7 @@ def analyze_ebs_encryption(
         return {'error': str(e)}
 
 
+@tool
 def find_ebs_volume_anomalies(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -972,6 +978,7 @@ def find_ebs_volume_anomalies(
         return {'error': str(e)}
 
 
+@tool
 def analyze_ami_usage(
     min_age_days: int = 180,
     aws_client: Optional[AWSClient] = None

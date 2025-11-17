@@ -13,8 +13,10 @@ These tools help with cost optimization and budget management.
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
 from strandkit.core.aws_client import AWSClient
+from strands import tool
 
 
+@tool
 def get_cost_and_usage(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
@@ -184,6 +186,7 @@ def get_cost_and_usage(
         }
 
 
+@tool
 def get_cost_by_service(
     days_back: int = 30,
     top_n: int = 10,
@@ -323,6 +326,7 @@ def get_cost_by_service(
         }
 
 
+@tool
 def detect_cost_anomalies(
     days_back: int = 30,
     threshold_percentage: float = 20.0,
@@ -471,6 +475,7 @@ def detect_cost_anomalies(
     }
 
 
+@tool
 def get_cost_forecast(
     days_forward: int = 30,
     aws_client: Optional[AWSClient] = None

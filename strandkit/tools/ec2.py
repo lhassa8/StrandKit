@@ -20,8 +20,10 @@ except ImportError:
     NoCredentialsError = Exception
 
 from strandkit.core.aws_client import AWSClient
+from strands import tool
 
 
+@tool
 def analyze_ec2_instance(
     instance_id: str,
     include_metrics: bool = True,
@@ -178,6 +180,7 @@ def analyze_ec2_instance(
         }
 
 
+@tool
 def get_ec2_inventory(
     filters: Optional[Dict[str, List[str]]] = None,
     aws_client: Optional[AWSClient] = None
@@ -307,6 +310,7 @@ def get_ec2_inventory(
         }
 
 
+@tool
 def find_unused_resources(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -499,6 +503,7 @@ def find_unused_resources(
         }
 
 
+@tool
 def analyze_security_group(
     group_id: str,
     aws_client: Optional[AWSClient] = None
@@ -623,6 +628,7 @@ def analyze_security_group(
         }
 
 
+@tool
 def find_overpermissive_security_groups(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:
@@ -780,6 +786,7 @@ def find_overpermissive_security_groups(
 
 # Helper functions
 
+@tool
 def _get_instance_metrics(instance_id: str, aws_client: AWSClient) -> Dict[str, Any]:
     """Fetch CloudWatch metrics for an instance."""
     try:
@@ -816,6 +823,7 @@ def _get_instance_metrics(instance_id: str, aws_client: AWSClient) -> Dict[str, 
         return None
 
 
+@tool
 def _estimate_instance_cost(instance_details: Dict, volumes: List[Dict]) -> Dict[str, Any]:
     """Estimate monthly cost for an instance (rough estimates)."""
     # Very rough cost estimates - actual prices vary by region
@@ -858,6 +866,7 @@ def _estimate_instance_cost(instance_details: Dict, volumes: List[Dict]) -> Dict
     }
 
 
+@tool
 def _assess_instance_health(
     instance_details: Dict,
     volumes: List[Dict],
@@ -900,6 +909,7 @@ def _assess_instance_health(
     }
 
 
+@tool
 def _generate_instance_recommendations(
     instance_details: Dict,
     volumes: List[Dict],
@@ -941,6 +951,7 @@ def _generate_instance_recommendations(
     return recommendations
 
 
+@tool
 def _analyze_sg_rule(rule: Dict, direction: str) -> Dict[str, Any]:
     """Analyze a single security group rule."""
     from_port = rule.get('FromPort', 0)
@@ -985,6 +996,7 @@ def _analyze_sg_rule(rule: Dict, direction: str) -> Dict[str, Any]:
     }
 
 
+@tool
 def _generate_sg_recommendations(
     ingress_rules: List[Dict],
     egress_rules: List[Dict],
@@ -1012,6 +1024,7 @@ def _generate_sg_recommendations(
     return recommendations
 
 
+@tool
 def _get_port_name(port: int) -> str:
     """Get common name for port number."""
     port_names = {

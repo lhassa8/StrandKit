@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 import statistics
 from strandkit.core.aws_client import AWSClient
+from strands import tool
 
 
 # ============================================================================
@@ -36,11 +37,13 @@ SERVICE_NAMES = {
 }
 
 
+@tool
 def _get_service_name(service: str) -> str:
     """Get the full AWS Cost Explorer service name."""
     return SERVICE_NAMES.get(service, service)
 
 
+@tool
 def _safe_float(value: Any, default: float = 0.0) -> float:
     """Safely convert value to float."""
     if value is None:
@@ -57,6 +60,7 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
     return default
 
 
+@tool
 def _calculate_percentage(part: float, total: float) -> float:
     """Calculate percentage, handling division by zero."""
     if total == 0:
@@ -64,6 +68,7 @@ def _calculate_percentage(part: float, total: float) -> float:
     return (part / total) * 100.0
 
 
+@tool
 def _format_date(date_obj: datetime) -> str:
     """Format datetime to ISO string."""
     if isinstance(date_obj, datetime):
@@ -71,6 +76,7 @@ def _format_date(date_obj: datetime) -> str:
     return str(date_obj)
 
 
+@tool
 def _get_days_until(target_date: datetime) -> int:
     """Calculate days until target date."""
     if isinstance(target_date, str):
@@ -83,6 +89,7 @@ def _get_days_until(target_date: datetime) -> int:
 # Tool 1: Budget Status
 # ============================================================================
 
+@tool
 def get_budget_status(
     forecast_months: int = 3,
     aws_client: Optional[AWSClient] = None
@@ -296,6 +303,7 @@ def get_budget_status(
 # Tool 2: Analyze Reserved Instances
 # ============================================================================
 
+@tool
 def analyze_reserved_instances(
     service: str = "EC2",
     lookback_days: int = 30,
@@ -534,6 +542,7 @@ def analyze_reserved_instances(
 # Tool 3: Analyze Savings Plans
 # ============================================================================
 
+@tool
 def analyze_savings_plans(
     lookback_days: int = 30,
     aws_client: Optional[AWSClient] = None
@@ -745,6 +754,7 @@ def analyze_savings_plans(
 # Tool 4: Get Rightsizing Recommendations
 # ============================================================================
 
+@tool
 def get_rightsizing_recommendations(
     service: str = "EC2",
     min_savings: float = 10.0,
@@ -977,6 +987,7 @@ def get_rightsizing_recommendations(
 # Tool 5: Analyze Commitment Savings (Simplified for now)
 # ============================================================================
 
+@tool
 def analyze_commitment_savings(
     service: str = "EC2",
     lookback_days: int = 30,
@@ -1138,6 +1149,7 @@ def analyze_commitment_savings(
 # Tool 6: Find Cost Optimization Opportunities (Aggregator)
 # ============================================================================
 
+@tool
 def find_cost_optimization_opportunities(
     min_impact: float = 50.0,
     aws_client: Optional[AWSClient] = None

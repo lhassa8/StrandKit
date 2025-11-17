@@ -12,8 +12,10 @@ These tools help with security auditing and IAM policy review.
 from typing import Any, Dict, List, Optional, Set
 import json
 from strandkit.core.aws_client import AWSClient
+from strands import tool
 
 
+@tool
 def analyze_role(
     role_name: str,
     aws_client: Optional[AWSClient] = None
@@ -307,6 +309,7 @@ def analyze_role(
         }
 
 
+@tool
 def _analyze_statement(statement: Dict[str, Any]) -> tuple:
     """
     Analyze a single IAM policy statement.
@@ -355,6 +358,7 @@ def _analyze_statement(statement: Dict[str, Any]) -> tuple:
     return services, has_admin, has_wildcard_resources, has_wildcard_actions
 
 
+@tool
 def explain_policy(
     policy_document: str,
     aws_client: Optional[AWSClient] = None
@@ -454,6 +458,7 @@ def explain_policy(
         }
 
 
+@tool
 def _generate_policy_explanation(effect: str, actions: List[str], resources: List[str]) -> str:
     """Generate plain English explanation of a policy statement."""
 
@@ -471,6 +476,7 @@ def _generate_policy_explanation(effect: str, actions: List[str], resources: Lis
         return f"Denies {action_desc} on {resource_desc}"
 
 
+@tool
 def find_overpermissive_roles(
     aws_client: Optional[AWSClient] = None
 ) -> Dict[str, Any]:

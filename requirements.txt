@@ -2,8 +2,11 @@
 boto3>=1.26.0
 botocore>=1.29.0
 
-# Agent runtime (for Strands integration)
-anthropic>=0.18.0  # Claude API for agent runtime
+# Strands integration (v2.0.0)
+strands-agents>=0.1.0  # AWS Strands Agents framework
+
+# Optional: For example agents (deprecated in v2.0)
+anthropic>=0.18.0  # Claude API for standalone examples (use Strands instead)
 
 # Development dependencies
 pytest>=7.0.0
