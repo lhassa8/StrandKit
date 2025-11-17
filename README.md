@@ -171,13 +171,82 @@ No infrastructure to deploy. No configuration files. No learning curve. Just imp
 | **`analyze_s3_request_costs`** | Request-based cost analysis | ✅ Working |
 | **`analyze_large_s3_objects`** | Find large objects needing optimization | ✅ Working |
 
-### Agent Templates (Coming Soon)
+### Strands AI Agents (Powered by Claude)
+
+StrandKit includes AI agents that can reason about your AWS infrastructure and use tools automatically.
 
 | Agent | Description | Status |
 |-------|-------------|--------|
-| **InfraDebuggerAgent** | Debug AWS infrastructure issues automatically | 🚧 In Progress |
-| **IAMReviewerAgent** | Review and explain IAM policies | 📋 Planned |
-| **CostAnalystAgent** | Analyze AWS costs and anomalies | 📋 Planned |
+| **InfraDebuggerAgent** | Debug AWS infrastructure issues using AI + tools | ✅ Working |
+| **SecurityAuditorAgent** | AI-powered security auditing | 📋 Planned |
+| **CostOptimizerAgent** | Intelligent cost optimization recommendations | 📋 Planned |
+
+**How Strands Agents Work:**
+- You ask a question in natural language
+- Claude (AI) reasons about the problem
+- Agent automatically calls relevant StrandKit tools
+- You get an intelligent answer with evidence
+
+**Example:**
+```python
+from strandkit import InfraDebuggerAgent
+
+# Create agent (uses Claude via Anthropic API)
+agent = InfraDebuggerAgent(region="us-east-1")
+
+# Ask a question - agent will use tools automatically
+result = agent.run("Why is my Lambda function failing?")
+print(result['answer'])
+
+# Agent might call: get_lambda_logs, get_metric, explain_changeset
+# Then synthesize findings into a clear diagnosis
+```
+
+**Requirements:** Set `ANTHROPIC_API_KEY` environment variable ([get API key](https://console.anthropic.com/))
+
+## How to Use StrandKit
+
+StrandKit supports **three usage patterns**:
+
+### 1. Standalone Tools (Direct boto3 wrapper)
+Use individual tools directly - no AI required:
+
+```python
+from strandkit import find_overpermissive_roles
+
+# Direct function call
+results = find_overpermissive_roles()
+print(f"Found {results['summary']['high_risk']} risky roles")
+```
+
+### 2. Strands AI Agents (Powered by Claude)
+Let AI agents reason and use tools automatically:
+
+```python
+from strandkit import InfraDebuggerAgent
+
+agent = InfraDebuggerAgent()
+result = agent.run("Debug my Lambda errors from the last hour")
+print(result['answer'])  # AI-generated diagnosis
+```
+
+### 3. Custom Strands Agents
+Build your own AI agents with specific tools:
+
+```python
+from strandkit.strands import get_tools_by_category
+from strandkit.core.base_agent import BaseAgent
+
+class MyCustomAgent(BaseAgent):
+    SYSTEM_PROMPT_FILE = "prompts/my_prompt.md"
+
+    def _get_tools(self):
+        # Choose exactly which tools your agent can use
+        return get_tools_by_category('cost') + get_tools_by_category('iam')
+
+agent = MyCustomAgent()
+result = agent.run("Find ways to save money on IAM and compute")
+```
 
 ## Installation
 
