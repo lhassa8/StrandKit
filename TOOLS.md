@@ -1,6 +1,25 @@
 # StrandKit Tools Reference
 
-Complete reference for all 14 StrandKit tools.
+Complete API reference for all **60 AWS tools** in StrandKit v2.0.0.
+
+All tools are decorated with `@tool` for AWS Strands Agents integration and can also be used standalone.
+
+---
+
+## Table of Contents
+
+- [CloudWatch (4 tools)](#cloudwatch-tools)
+- [CloudFormation (1 tool)](#cloudformation-tools)
+- [IAM (3 tools)](#iam-tools)
+- [IAM Security (8 tools)](#iam-security-tools)
+- [Cost Explorer (4 tools)](#cost-explorer-tools)
+- [Cost Analytics (6 tools)](#cost-analytics-tools)
+- [Cost Waste (5 tools)](#cost-waste-tools)
+- [EC2 (5 tools)](#ec2-tools)
+- [EC2 Advanced (4 tools)](#ec2-advanced-tools)
+- [S3 (5 tools)](#s3-tools)
+- [S3 Advanced (7 tools)](#s3-advanced-tools)
+- [EBS (6 tools)](#ebs-tools)
 
 ---
 
@@ -10,149 +29,73 @@ Complete reference for all 14 StrandKit tools.
 
 Retrieve CloudWatch logs for a Lambda function.
 
-**Parameters:**
-- `function_name` (str): Lambda function name
-- `start_minutes` (int): Minutes to look back (default: 60)
-- `filter_pattern` (str, optional): CloudWatch filter pattern
-- `limit` (int): Max events to return (default: 100)
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "function_name": "my-function",
-  "log_group": "/aws/lambda/my-function",
-  "time_range": {"start": "...", "end": "..."},
-  "total_events": 42,
-  "error_count": 5,
-  "has_errors": true,
-  "events": [
-    {
-      "timestamp": "2025-11-16T10:30:00Z",
-      "message": "Error processing request",
-      "stream": "2025/11/16/[$LATEST]abc123"
-    }
-  ]
-}
-```
-
-**Example:**
 ```python
-logs = get_lambda_logs("my-function", start_minutes=60, filter_pattern="ERROR")
+from strandkit import get_lambda_logs
+
+logs = get_lambda_logs(
+    function_name="my-function",
+    start_minutes=60,
+    filter_pattern="ERROR",  # optional
+    limit=100
+)
 ```
 
----
+**Returns:** Log events with timestamps, error count, and time range.
 
 ### get_metric()
 
 Query CloudWatch metrics with statistics.
 
-**Parameters:**
-- `namespace` (str): CloudWatch namespace (e.g., "AWS/Lambda")
-- `metric_name` (str): Metric name (e.g., "Errors", "Duration")
-- `dimensions` (dict, optional): Metric dimensions
-- `statistic` (str): Statistic type (default: "Average")
-  - Options: "Average", "Sum", "Maximum", "Minimum", "SampleCount"
-- `period` (int): Period in seconds (default: 300)
-- `start_minutes` (int): Minutes to look back (default: 120)
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "namespace": "AWS/Lambda",
-  "metric_name": "Errors",
-  "dimensions": {"FunctionName": "my-api"},
-  "statistic": "Sum",
-  "datapoints": [
-    {"timestamp": "2025-11-16T10:00:00Z", "value": 5.0, "unit": "Count"}
-  ],
-  "summary": {"min": 0, "max": 10, "avg": 3.5, "count": 24}
-}
-```
-
-**Example:**
 ```python
-errors = get_metric(
+from strandkit import get_metric
+
+metrics = get_metric(
     namespace="AWS/Lambda",
     metric_name="Errors",
-    dimensions={"FunctionName": "my-function"},
-    statistic="Sum",
-    period=300
+    dimensions={"FunctionName": "my-api"},
+    statistic="Sum",  # Average, Sum, Maximum, Minimum
+    period=300,
+    start_minutes=120
 )
 ```
 
----
+**Returns:** Datapoints with summary statistics (min, max, avg, count).
 
 ### get_log_insights()
 
 Run advanced CloudWatch Logs Insights queries.
 
-**Parameters:**
-- `log_group_names` (list[str]): Log groups to query
-- `query_string` (str): Logs Insights query
-- `start_minutes` (int): Minutes to look back (default: 60)
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "log_groups": ["/aws/lambda/my-function"],
-  "query": "fields @timestamp, @message | filter @message like /ERROR/",
-  "results": [
-    {
-      "timestamp": "2025-11-16T10:30:00Z",
-      "fields": {"@message": "Error occurred"}
-    }
-  ],
-  "statistics": {
-    "records_matched": 10,
-    "records_scanned": 1000,
-    "bytes_scanned": 50000
-  },
-  "status": "Complete"
-}
-```
-
-**Example:**
 ```python
+from strandkit import get_log_insights
+
 results = get_log_insights(
     log_group_names=["/aws/lambda/my-function"],
-    query_string="fields @timestamp, @message | filter @message like /ERROR/ | limit 20"
+    query_string="""
+        fields @timestamp, @message
+        | filter @message like /ERROR/
+        | stats count() by bin(5m)
+    """,
+    start_minutes=120
 )
 ```
 
----
+**Returns:** Query results with statistics (records scanned/matched).
 
 ### get_recent_errors()
 
 Quick helper to find recent errors across log groups.
 
-**Parameters:**
-- `log_group_pattern` (str): Pattern to match (default: "/aws/lambda/")
-- `start_minutes` (int): Minutes to look back (default: 60)
-- `limit` (int): Max errors to return (default: 50)
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "log_groups_scanned": 10,
-  "total_errors": 15,
-  "errors": [
-    {
-      "timestamp": "2025-11-16T10:30:00Z",
-      "log_group": "my-function",
-      "message": "Error processing request"
-    }
-  ]
-}
-```
-
-**Example:**
 ```python
-errors = get_recent_errors("/aws/lambda/", start_minutes=60)
+from strandkit import get_recent_errors
+
+errors = get_recent_errors(
+    log_group_pattern="/aws/lambda/",
+    start_minutes=60,
+    limit=50
+)
 ```
+
+**Returns:** Error events from all matching log groups.
 
 ---
 
@@ -162,40 +105,16 @@ errors = get_recent_errors("/aws/lambda/", start_minutes=60)
 
 Analyze CloudFormation changeset with risk assessment.
 
-**Parameters:**
-- `changeset_name` (str): Changeset name or ARN
-- `stack_name` (str): CloudFormation stack name
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "changeset_name": "my-changeset",
-  "stack_name": "my-stack",
-  "status": "CREATE_COMPLETE",
-  "changes": [
-    {
-      "resource_type": "AWS::Lambda::Function",
-      "logical_id": "MyFunction",
-      "action": "Modify",
-      "replacement": "True",
-      "risk_level": "high",
-      "details": "⚠️ REPLACING Lambda Function 'MyFunction'..."
-    }
-  ],
-  "summary": {
-    "total_changes": 5,
-    "high_risk_changes": 2,
-    "requires_replacement": 1
-  },
-  "recommendations": ["⚠️ Some resources will be replaced..."]
-}
-```
-
-**Example:**
 ```python
-analysis = explain_changeset("my-changeset", "my-stack")
+from strandkit import explain_changeset
+
+analysis = explain_changeset(
+    changeset_name="my-changeset",
+    stack_name="my-stack"
+)
 ```
+
+**Returns:** Changes with risk levels, recommendations, and replacement info.
 
 ---
 
@@ -205,109 +124,138 @@ analysis = explain_changeset("my-changeset", "my-stack")
 
 Analyze IAM role permissions and security risks.
 
-**Parameters:**
-- `role_name` (str): IAM role name
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "role_name": "MyAppRole",
-  "role_arn": "arn:aws:iam::123456789:role/MyAppRole",
-  "attached_policies": [
-    {
-      "policy_name": "MyPolicy",
-      "policy_arn": "arn:aws:iam::...",
-      "policy_type": "Customer Managed"
-    }
-  ],
-  "permissions_summary": {
-    "total_statements": 5,
-    "services_accessed": ["s3", "dynamodb"],
-    "has_admin_access": false,
-    "has_wildcard_resources": true,
-    "has_wildcard_actions": false
-  },
-  "risk_assessment": {
-    "risk_level": "medium",
-    "risk_factors": ["Uses wildcard resources (e.g., Resource: *)"],
-    "overpermissive_patterns": ["Wildcard resources detected"]
-  },
-  "recommendations": ["⚠️ Replace wildcard resources with specific ARNs"]
-}
-```
-
-**Example:**
 ```python
-analysis = analyze_role("MyAppRole")
+from strandkit import analyze_role
+
+role = analyze_role("MyAppRole")
 ```
 
----
+**Returns:** Attached policies, permissions summary, risk assessment, and recommendations.
 
 ### explain_policy()
 
 Explain IAM policy document in plain English.
 
-**Parameters:**
-- `policy_document` (str): JSON policy document
-- `aws_client` (AWSClient, optional): Not used, for consistency
-
-**Returns:**
-```json
-{
-  "statements": [
-    {
-      "effect": "Allow",
-      "actions": ["s3:*"],
-      "resources": ["*"],
-      "explanation": "Allows s3:* on *"
-    }
-  ],
-  "summary": "Policy contains 1 statement(s)",
-  "risk_level": "critical"
-}
-```
-
-**Example:**
 ```python
+from strandkit import explain_policy
+
 policy_json = '{"Statement": [...]}'
 explanation = explain_policy(policy_json)
 ```
 
----
+**Returns:** Statement-by-statement explanation with overall risk level.
 
 ### find_overpermissive_roles()
 
 Scan all IAM roles for security issues.
 
-**Parameters:**
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "total_roles": 50,
-  "scanned_roles": 50,
-  "overpermissive_roles": [
-    {
-      "role_name": "AdminRole",
-      "risk_level": "critical",
-      "risk_factors": ["Has administrator access (*:*)"]
-    }
-  ],
-  "summary": {
-    "critical": 1,
-    "high": 3,
-    "medium": 12,
-    "low": 34
-  }
-}
-```
-
-**Example:**
 ```python
+from strandkit import find_overpermissive_roles
+
 audit = find_overpermissive_roles()
 ```
+
+**Returns:** List of risky roles with severity breakdown (critical/high/medium/low).
+
+---
+
+## IAM Security Tools
+
+### analyze_iam_users()
+
+Analyze all IAM users for security compliance.
+
+```python
+from strandkit import analyze_iam_users
+
+users = analyze_iam_users()
+```
+
+**Returns:** User details, access key age, password policy compliance, MFA status.
+
+### analyze_access_keys()
+
+Analyze IAM access keys for rotation and usage.
+
+```python
+from strandkit import analyze_access_keys
+
+keys = analyze_access_keys(max_age_days=90)
+```
+
+**Returns:** Access keys older than threshold, last used dates, rotation recommendations.
+
+### analyze_mfa_compliance()
+
+Check MFA compliance across all users.
+
+```python
+from strandkit import analyze_mfa_compliance
+
+mfa = analyze_mfa_compliance()
+```
+
+**Returns:** Users without MFA, compliance rate, security recommendations.
+
+### analyze_password_policy()
+
+Analyze account password policy.
+
+```python
+from strandkit import analyze_password_policy
+
+policy = analyze_password_policy()
+```
+
+**Returns:** Current settings vs. best practices, compliance score, recommendations.
+
+### find_cross_account_access()
+
+Find IAM roles with cross-account access.
+
+```python
+from strandkit import find_cross_account_access
+
+cross_account = find_cross_account_access()
+```
+
+**Returns:** Roles with external account access, trust relationships, risk assessment.
+
+### detect_privilege_escalation_paths()
+
+Detect potential privilege escalation risks.
+
+```python
+from strandkit import detect_privilege_escalation_paths
+
+escalation = detect_privilege_escalation_paths()
+```
+
+**Returns:** Roles/users with dangerous permission combinations.
+
+### analyze_unused_permissions()
+
+Find unused IAM permissions (requires IAM Access Analyzer).
+
+```python
+from strandkit import analyze_unused_permissions
+
+unused = analyze_unused_permissions(days_back=90)
+```
+
+**Returns:** Permissions granted but not used, optimization opportunities.
+
+### get_iam_credential_report()
+
+Get IAM credential report with security insights.
+
+```python
+from strandkit import get_iam_credential_report
+
+report = get_iam_credential_report()
+```
+
+**Returns:** Comprehensive credential report with password/key ages, MFA status.
 
 ---
 
@@ -317,530 +265,671 @@ audit = find_overpermissive_roles()
 
 Get AWS cost and usage data for a time period.
 
-**Parameters:**
-- `start_date` (str, optional): Start date (YYYY-MM-DD)
-- `end_date` (str, optional): End date (YYYY-MM-DD)
-- `days_back` (int): Days to look back if dates not specified (default: 30)
-- `granularity` (str): "DAILY", "MONTHLY", or "HOURLY" (default: "DAILY")
-- `metrics` (list[str], optional): Metrics to retrieve
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "time_period": {"start": "2025-10-17", "end": "2025-11-16"},
-  "granularity": "DAILY",
-  "total_cost": 148.84,
-  "currency": "USD",
-  "results_by_time": [
-    {"date": "2025-11-15", "amount": 4.85, "unit": "USD"}
-  ],
-  "summary": {
-    "total": 148.84,
-    "average_daily": 4.96,
-    "min_daily": 3.68,
-    "max_daily": 5.36
-  }
-}
-```
-
-**Example:**
 ```python
-costs = get_cost_and_usage(days_back=30)
+from strandkit import get_cost_and_usage
+
+costs = get_cost_and_usage(
+    days_back=30,
+    granularity="DAILY"  # DAILY, MONTHLY, HOURLY
+)
 ```
 
----
+**Returns:** Total cost, daily breakdown, summary statistics.
 
 ### get_cost_by_service()
 
 Get cost breakdown by AWS service.
 
-**Parameters:**
-- `days_back` (int): Days to look back (default: 30)
-- `top_n` (int): Number of top services (default: 10)
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "time_period": {"start": "2025-10-17", "end": "2025-11-16"},
-  "total_cost": 148.84,
-  "currency": "USD",
-  "services": [
-    {
-      "service": "Amazon Relational Database Service",
-      "cost": 130.78,
-      "percentage": 87.9
-    }
-  ]
-}
-```
-
-**Example:**
 ```python
-costs = get_cost_by_service(days_back=30, top_n=5)
+from strandkit import get_cost_by_service
+
+costs = get_cost_by_service(
+    days_back=30,
+    top_n=10
+)
 ```
 
----
+**Returns:** Services ranked by cost with percentages.
 
 ### detect_cost_anomalies()
 
 Detect unusual spending patterns.
 
-**Parameters:**
-- `days_back` (int): Days to analyze (default: 30)
-- `threshold_percentage` (float): % above average to flag (default: 20.0)
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "baseline": {
-    "average_daily_cost": 4.96,
-    "median_daily_cost": 4.90
-  },
-  "anomalies": [
-    {
-      "date": "2025-11-10",
-      "cost": 8.50,
-      "deviation_percentage": 71.4,
-      "severity": "high"
-    }
-  ],
-  "total_anomalies": 1,
-  "recommendations": ["⚠️ 1 day(s) with high cost anomalies..."]
-}
-```
-
-**Example:**
 ```python
-anomalies = detect_cost_anomalies(days_back=30, threshold_percentage=25)
+from strandkit import detect_cost_anomalies
+
+anomalies = detect_cost_anomalies(
+    days_back=30,
+    threshold_percentage=20.0
+)
 ```
 
----
+**Returns:** Days with unusual costs, deviation percentages, severity levels.
 
 ### get_cost_forecast()
 
 Forecast future AWS costs.
 
-**Parameters:**
-- `days_forward` (int): Days to forecast (default: 30, max: 90)
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "time_period": {"start": "2025-11-17", "end": "2025-12-17"},
-  "forecast": {
-    "predicted_cost": 141.23,
-    "prediction_interval_lower": 127.11,
-    "prediction_interval_upper": 155.35,
-    "currency": "USD"
-  },
-  "daily_forecast": [
-    {"date": "2025-11-17", "amount": 4.86}
-  ]
-}
-```
-
-**Example:**
 ```python
-forecast = get_cost_forecast(days_forward=30)
+from strandkit import get_cost_forecast
+
+forecast = get_cost_forecast(days_forward=30)  # max 90
 ```
+
+**Returns:** Predicted costs with confidence intervals.
 
 ---
 
-## EC2 & Compute Tools
+## Cost Analytics Tools
+
+### get_budget_status()
+
+Get AWS Budget status and alerts.
+
+```python
+from strandkit import get_budget_status
+
+budgets = get_budget_status()
+```
+
+**Returns:** All budgets with current spend vs. limit, forecast status.
+
+### analyze_reserved_instances()
+
+Analyze Reserved Instance utilization and coverage.
+
+```python
+from strandkit import analyze_reserved_instances
+
+ri = analyze_reserved_instances(days_back=30)
+```
+
+**Returns:** RI utilization rates, coverage gaps, savings opportunities.
+
+### analyze_savings_plans()
+
+Analyze Savings Plans utilization and recommendations.
+
+```python
+from strandkit import analyze_savings_plans
+
+savings = analyze_savings_plans(days_back=30)
+```
+
+**Returns:** Savings Plans utilization, coverage, potential savings.
+
+### get_rightsizing_recommendations()
+
+Get EC2 rightsizing recommendations from Cost Explorer.
+
+```python
+from strandkit import get_rightsizing_recommendations
+
+recommendations = get_rightsizing_recommendations()
+```
+
+**Returns:** Under/over-provisioned instances with cost savings.
+
+### analyze_commitment_savings()
+
+Analyze savings from commitments (RI + Savings Plans).
+
+```python
+from strandkit import analyze_commitment_savings
+
+commitments = analyze_commitment_savings(days_back=30)
+```
+
+**Returns:** Total savings, utilization rates, recommendations.
+
+### find_cost_optimization_opportunities()
+
+Find comprehensive cost optimization opportunities.
+
+```python
+from strandkit import find_cost_optimization_opportunities
+
+opportunities = find_cost_optimization_opportunities()
+```
+
+**Returns:** Rightsizing, idle resources, commitment recommendations.
+
+---
+
+## Cost Waste Tools
+
+### find_zombie_resources()
+
+Find unused resources across AWS services.
+
+```python
+from strandkit import find_zombie_resources
+
+zombies = find_zombie_resources()
+```
+
+**Returns:** Unattached volumes, old snapshots, unused IPs, stopped instances with costs.
+
+### analyze_idle_resources()
+
+Find idle EC2 instances and RDS databases.
+
+```python
+from strandkit import analyze_idle_resources
+
+idle = analyze_idle_resources(
+    cpu_threshold=5.0,
+    days_back=7
+)
+```
+
+**Returns:** Resources with low CPU utilization, potential savings.
+
+### analyze_snapshot_waste()
+
+Analyze EBS snapshot waste (old/orphaned snapshots).
+
+```python
+from strandkit import analyze_snapshot_waste
+
+snapshots = analyze_snapshot_waste(
+    age_threshold_days=90,
+    include_ami_snapshots=False
+)
+```
+
+**Returns:** Old snapshots, orphaned snapshots, potential savings.
+
+### analyze_data_transfer_costs()
+
+Analyze data transfer costs between regions/AZs.
+
+```python
+from strandkit import analyze_data_transfer_costs
+
+transfer = analyze_data_transfer_costs(days_back=30)
+```
+
+**Returns:** Data transfer costs by type, optimization recommendations.
+
+### get_cost_allocation_tags()
+
+Analyze cost allocation tag coverage.
+
+```python
+from strandkit import get_cost_allocation_tags
+
+tags = get_cost_allocation_tags()
+```
+
+**Returns:** Resources with/without tags, coverage percentages, untagged costs.
+
+---
+
+## EC2 Tools
 
 ### analyze_ec2_instance()
 
-Perform comprehensive analysis of an EC2 instance.
+Comprehensive analysis of an EC2 instance.
 
-**Parameters:**
-- `instance_id` (str): EC2 instance ID (e.g., "i-1234567890abcdef0")
-- `include_metrics` (bool): Whether to fetch CloudWatch metrics (default: True)
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "instance_id": "i-1234567890abcdef0",
-  "instance_details": {
-    "instance_id": "i-1234567890abcdef0",
-    "instance_type": "t3.medium",
-    "state": "running",
-    "launch_time": "2025-01-15T10:30:00Z",
-    "uptime_days": 30,
-    "availability_zone": "us-east-1a",
-    "private_ip": "10.0.1.50",
-    "public_ip": "54.123.45.67"
-  },
-  "security_groups": [
-    {
-      "group_id": "sg-abc123",
-      "group_name": "web-servers",
-      "ingress_rules_count": 3,
-      "egress_rules_count": 1
-    }
-  ],
-  "volumes": [
-    {
-      "volume_id": "vol-xyz789",
-      "device_name": "/dev/xvda",
-      "size_gb": 100,
-      "volume_type": "gp3",
-      "encrypted": true,
-      "state": "in-use"
-    }
-  ],
-  "cost_estimate": {
-    "monthly_cost": 45.50,
-    "instance_cost": 35.50,
-    "storage_cost": 10.00
-  },
-  "metrics": {
-    "cpu_utilization": {
-      "average": 12.5,
-      "maximum": 45.2
-    }
-  },
-  "health_check": {
-    "health_status": "healthy",
-    "issues": [],
-    "warnings": []
-  },
-  "recommendations": [
-    "✅ Instance configuration looks good"
-  ]
-}
-```
-
-**Example:**
 ```python
 from strandkit import analyze_ec2_instance
 
-analysis = analyze_ec2_instance("i-1234567890abcdef0")
-print(f"Monthly cost: ${analysis['cost_estimate']['monthly_cost']:.2f}")
-print(f"CPU average: {analysis['metrics']['cpu_utilization']['average']:.1f}%")
+analysis = analyze_ec2_instance(
+    instance_id="i-1234567890abcdef0",
+    include_metrics=True
+)
 ```
 
----
+**Returns:** Instance details, volumes, security groups, cost estimate, metrics, health check.
 
 ### get_ec2_inventory()
 
-Get comprehensive inventory of all EC2 instances.
+Get comprehensive EC2 instance inventory.
 
-**Parameters:**
-- `filters` (dict, optional): EC2 filters (e.g., {"instance-state-name": ["running"]})
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "instances": [
-    {
-      "instance_id": "i-abc123",
-      "name": "web-server-1",
-      "instance_type": "t3.medium",
-      "state": "running",
-      "uptime_days": 45,
-      "private_ip": "10.0.1.10",
-      "availability_zone": "us-east-1a",
-      "estimated_monthly_cost": 35.50
-    }
-  ],
-  "summary": {
-    "total_instances": 10,
-    "by_state": {
-      "running": 8,
-      "stopped": 2
-    },
-    "by_type": {
-      "t3.medium": 6,
-      "t3.large": 4
-    },
-    "by_az": {
-      "us-east-1a": 5,
-      "us-east-1b": 5
-    }
-  },
-  "total_monthly_cost": 355.00
-}
-```
-
-**Example:**
 ```python
 from strandkit import get_ec2_inventory
 
-# Get all running instances
-inventory = get_ec2_inventory(filters={"instance-state-name": ["running"]})
-print(f"Running instances: {inventory['summary']['by_state']['running']}")
-print(f"Total monthly cost: ${inventory['total_monthly_cost']:.2f}")
+inventory = get_ec2_inventory(
+    filters={"instance-state-name": ["running"]}
+)
 ```
 
----
+**Returns:** All instances with summary by state/type/AZ, total monthly cost.
 
 ### find_unused_resources()
 
-Find unused or underutilized EC2 resources to reduce costs.
+Find unused EC2 resources (stopped instances, unattached volumes, etc.).
 
-**Parameters:**
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "stopped_instances": [
-    {
-      "instance_id": "i-xyz789",
-      "name": "old-test-server",
-      "instance_type": "t3.large",
-      "availability_zone": "us-east-1a"
-    }
-  ],
-  "stopped_instances_count": 3,
-  "unattached_volumes": [
-    {
-      "volume_id": "vol-abc123",
-      "size_gb": 100,
-      "volume_type": "gp2",
-      "availability_zone": "us-east-1a",
-      "estimated_monthly_cost": 10.00
-    }
-  ],
-  "unattached_volumes_count": 5,
-  "unused_elastic_ips": [
-    {
-      "allocation_id": "eipalloc-abc123",
-      "public_ip": "54.123.45.67",
-      "estimated_monthly_cost": 3.65
-    }
-  ],
-  "unused_elastic_ips_count": 2,
-  "old_snapshots": [
-    {
-      "snapshot_id": "snap-xyz789",
-      "size_gb": 50,
-      "age_days": 180,
-      "estimated_monthly_cost": 2.50
-    }
-  ],
-  "old_snapshots_count": 15,
-  "total_potential_savings": 125.50,
-  "breakdown": {
-    "volumes": 50.00,
-    "elastic_ips": 7.30,
-    "snapshots": 68.20
-  },
-  "recommendations": [
-    "💰 5 unattached volume(s) found - potential savings: $50.00/month"
-  ]
-}
-```
-
-**Example:**
 ```python
 from strandkit import find_unused_resources
 
 unused = find_unused_resources()
-print(f"Potential monthly savings: ${unused['total_potential_savings']:.2f}")
-print(f"Stopped instances: {unused['stopped_instances_count']}")
-print(f"Unattached volumes: {unused['unattached_volumes_count']}")
 ```
 
----
+**Returns:** Stopped instances, unattached volumes/IPs, old snapshots with savings.
 
 ### analyze_security_group()
 
-Analyze security group rules and assess security risks.
+Analyze security group rules and assess risks.
 
-**Parameters:**
-- `group_id` (str): Security group ID (e.g., "sg-1234567890abcdef0")
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "group_id": "sg-abc123",
-  "group_details": {
-    "group_id": "sg-abc123",
-    "group_name": "web-servers",
-    "description": "Security group for web servers",
-    "vpc_id": "vpc-xyz789"
-  },
-  "ingress_rules": [
-    {
-      "direction": "ingress",
-      "protocol": "tcp",
-      "from_port": 443,
-      "to_port": 443,
-      "sources": [
-        {"type": "cidr", "value": "0.0.0.0/0"}
-      ],
-      "risk_level": "high",
-      "risk_reason": "Public access to port 443"
-    }
-  ],
-  "ingress_rules_count": 3,
-  "egress_rules_count": 1,
-  "risk_assessment": {
-    "risk_level": "high",
-    "risk_factors": [
-      "Public access to port 443"
-    ]
-  },
-  "attached_resources": {
-    "instances": 5
-  },
-  "recommendations": [
-    "🔒 Restrict public access (0.0.0.0/0) to specific IP ranges where possible"
-  ]
-}
-```
-
-**Example:**
 ```python
 from strandkit import analyze_security_group
 
 sg = analyze_security_group("sg-1234567890abcdef0")
-print(f"Risk level: {sg['risk_assessment']['risk_level']}")
-print(f"Attached instances: {sg['attached_resources']['instances']}")
 ```
 
----
+**Returns:** Rules with risk assessment, attached resources, recommendations.
 
 ### find_overpermissive_security_groups()
 
 Scan all security groups for overly permissive rules.
 
-**Parameters:**
-- `aws_client` (AWSClient, optional): Custom AWS client
-
-**Returns:**
-```json
-{
-  "security_groups": [
-    {
-      "group_id": "sg-abc123",
-      "group_name": "ssh-access",
-      "risk_level": "critical",
-      "risk_factors": [
-        "Allows SSH (22) from 0.0.0.0/0"
-      ],
-      "ingress_rules_count": 1,
-      "is_unused": false
-    }
-  ],
-  "risky_groups": [
-    {
-      "group_id": "sg-abc123",
-      "group_name": "ssh-access",
-      "risk_level": "critical",
-      "risk_factors": [
-        "Allows SSH (22) from 0.0.0.0/0"
-      ]
-    }
-  ],
-  "unused_groups": [],
-  "summary": {
-    "total_groups": 25,
-    "critical": 2,
-    "high": 5,
-    "medium": 8,
-    "low": 10,
-    "unused": 3
-  },
-  "recommendations": [
-    "🔴 URGENT: 2 security group(s) with CRITICAL risk - immediate action required",
-    "⚠️ 5 security group(s) with HIGH risk - review and restrict access"
-  ]
-}
-```
-
-**Example:**
 ```python
 from strandkit import find_overpermissive_security_groups
 
 scan = find_overpermissive_security_groups()
-print(f"Total groups: {scan['summary']['total_groups']}")
-print(f"Critical risks: {scan['summary']['critical']}")
-
-# Review critical groups
-for sg in scan['risky_groups']:
-    if sg['risk_level'] == 'critical':
-        print(f"🔴 {sg['group_name']}: {sg['risk_factors']}")
 ```
+
+**Returns:** Risky groups by severity, unused groups, security recommendations.
 
 ---
 
-## Common Patterns
+## EC2 Advanced Tools
 
-### Error Handling
+### analyze_ec2_performance()
 
-All tools return structured JSON even on error:
+Analyze EC2 instance performance metrics.
 
 ```python
-result = get_lambda_logs("non-existent-function")
-if "error" in result or "warning" in result:
-    print(f"Issue: {result.get('error', result.get('warning'))}")
+from strandkit import analyze_ec2_performance
+
+perf = analyze_ec2_performance(
+    instance_id="i-1234567890abcdef0",
+    days_back=7
+)
+```
+
+**Returns:** CPU, memory, disk, network metrics with bottleneck analysis.
+
+### analyze_auto_scaling_groups()
+
+Analyze Auto Scaling Groups efficiency.
+
+```python
+from strandkit import analyze_auto_scaling_groups
+
+asg = analyze_auto_scaling_groups()
+```
+
+**Returns:** ASG details, scaling history, efficiency metrics, recommendations.
+
+### analyze_load_balancers()
+
+Analyze Load Balancer health and performance.
+
+```python
+from strandkit import analyze_load_balancers
+
+lb = analyze_load_balancers()
+```
+
+**Returns:** LB details, target health, metrics, cost analysis.
+
+### get_ec2_spot_recommendations()
+
+Get EC2 Spot instance recommendations.
+
+```python
+from strandkit import get_ec2_spot_recommendations
+
+spot = get_ec2_spot_recommendations()
+```
+
+**Returns:** Instances suitable for Spot, potential savings, interruption risk.
+
+---
+
+## S3 Tools
+
+### analyze_s3_bucket()
+
+Comprehensive S3 bucket analysis.
+
+```python
+from strandkit import analyze_s3_bucket
+
+bucket = analyze_s3_bucket("my-bucket")
+```
+
+**Returns:** Bucket details, size, object count, versioning, encryption, public access.
+
+### find_public_buckets()
+
+Find S3 buckets with public access.
+
+```python
+from strandkit import find_public_buckets
+
+public = find_public_buckets()
+```
+
+**Returns:** Buckets with public access, risk levels, remediation steps.
+
+### get_s3_cost_analysis()
+
+Analyze S3 costs by bucket.
+
+```python
+from strandkit import get_s3_cost_analysis
+
+costs = get_s3_cost_analysis(days_back=30)
+```
+
+**Returns:** Per-bucket costs, storage class breakdown, optimization opportunities.
+
+### analyze_bucket_access()
+
+Analyze S3 bucket access patterns and permissions.
+
+```python
+from strandkit import analyze_bucket_access
+
+access = analyze_bucket_access("my-bucket")
+```
+
+**Returns:** Bucket policy, ACLs, public access blocks, risk assessment.
+
+### find_unused_buckets()
+
+Find S3 buckets with no recent access.
+
+```python
+from strandkit import find_unused_buckets
+
+unused = find_unused_buckets(days_threshold=90)
+```
+
+**Returns:** Buckets with no recent uploads/downloads, costs, deletion candidates.
+
+---
+
+## S3 Advanced Tools
+
+### analyze_s3_storage_classes()
+
+Analyze S3 storage class distribution and optimization.
+
+```python
+from strandkit import analyze_s3_storage_classes
+
+storage = analyze_s3_storage_classes("my-bucket")
+```
+
+**Returns:** Objects by storage class, lifecycle rule recommendations, potential savings.
+
+### analyze_s3_lifecycle_policies()
+
+Analyze S3 lifecycle policies.
+
+```python
+from strandkit import analyze_s3_lifecycle_policies
+
+lifecycle = analyze_s3_lifecycle_policies("my-bucket")
+```
+
+**Returns:** Current policies, coverage gaps, optimization recommendations.
+
+### find_s3_versioning_waste()
+
+Find S3 buckets wasting storage on old versions.
+
+```python
+from strandkit import find_s3_versioning_waste
+
+versioning = find_s3_versioning_waste()
+```
+
+**Returns:** Buckets with excessive versions, costs, cleanup recommendations.
+
+### find_incomplete_multipart_uploads()
+
+Find incomplete S3 multipart uploads.
+
+```python
+from strandkit import find_incomplete_multipart_uploads
+
+uploads = find_incomplete_multipart_uploads()
+```
+
+**Returns:** Incomplete uploads by bucket, storage waste, cleanup recommendations.
+
+### analyze_s3_replication()
+
+Analyze S3 replication configuration and costs.
+
+```python
+from strandkit import analyze_s3_replication
+
+replication = analyze_s3_replication()
+```
+
+**Returns:** Replication rules, costs, efficiency metrics.
+
+### analyze_s3_request_costs()
+
+Analyze S3 request costs (GET, PUT, etc.).
+
+```python
+from strandkit import analyze_s3_request_costs
+
+requests = analyze_s3_request_costs(days_back=30)
+```
+
+**Returns:** Request counts by type, costs, optimization recommendations.
+
+### analyze_large_s3_objects()
+
+Find large S3 objects consuming storage.
+
+```python
+from strandkit import analyze_large_s3_objects
+
+large = analyze_large_s3_objects(
+    min_size_mb=100,
+    bucket_name="my-bucket"  # optional
+)
+```
+
+**Returns:** Large objects ranked by size, storage costs, archival candidates.
+
+---
+
+## EBS Tools
+
+### analyze_ebs_volumes()
+
+Analyze EBS volumes for optimization.
+
+```python
+from strandkit import analyze_ebs_volumes
+
+volumes = analyze_ebs_volumes()
+```
+
+**Returns:** Volume details, costs, underutilized volumes, rightsizing recommendations.
+
+### analyze_ebs_snapshots_lifecycle()
+
+Analyze EBS snapshot lifecycle and retention.
+
+```python
+from strandkit import analyze_ebs_snapshots_lifecycle
+
+snapshots = analyze_ebs_snapshots_lifecycle()
+```
+
+**Returns:** Snapshots by age, retention analysis, cleanup recommendations.
+
+### get_ebs_iops_recommendations()
+
+Get IOPS optimization recommendations for EBS.
+
+```python
+from strandkit import get_ebs_iops_recommendations
+
+iops = get_ebs_iops_recommendations()
+```
+
+**Returns:** Over/under-provisioned IOPS, potential savings.
+
+### analyze_ebs_encryption()
+
+Analyze EBS encryption compliance.
+
+```python
+from strandkit import analyze_ebs_encryption
+
+encryption = analyze_ebs_encryption()
+```
+
+**Returns:** Encrypted vs. unencrypted volumes, compliance gaps, remediation.
+
+### find_ebs_volume_anomalies()
+
+Find EBS volumes with unusual characteristics.
+
+```python
+from strandkit import find_ebs_volume_anomalies
+
+anomalies = find_ebs_volume_anomalies()
+```
+
+**Returns:** Oversized volumes, high-cost volumes, unusual IOPS configurations.
+
+### analyze_ami_usage()
+
+Analyze AMI usage and cleanup opportunities.
+
+```python
+from strandkit import analyze_ami_usage
+
+amis = analyze_ami_usage(age_threshold_days=180)
+```
+
+**Returns:** Old/unused AMIs, associated snapshots, storage costs, cleanup recommendations.
+
+---
+
+## Usage Patterns
+
+### With Strands Agents
+
+```python
+from strands import Agent
+from strandkit.strands import get_all_tools
+
+agent = Agent(
+    model="anthropic.claude-3-5-haiku",
+    tools=get_all_tools()
+)
+
+response = agent("Find overpermissive IAM roles and security groups")
+```
+
+### By Category
+
+```python
+from strandkit.strands import get_tools_by_category
+
+cost_tools = get_tools_by_category('cost')
+security_tools = get_tools_by_category('iam_security')
+```
+
+### Standalone
+
+```python
+from strandkit import find_overpermissive_roles, get_cost_by_service
+
+roles = find_overpermissive_roles()
+costs = get_cost_by_service(days_back=30)
 ```
 
 ### Custom AWS Client
 
-Use custom profile/region:
-
 ```python
 from strandkit.core.aws_client import AWSClient
+from strandkit import get_cost_by_service
 
-client = AWSClient(profile="prod", region="us-west-2")
-logs = get_lambda_logs("my-function", aws_client=client)
-```
-
-### Chaining Tools
-
-Combine tools for comprehensive analysis:
-
-```python
-# Find errors
-errors = get_metric("AWS/Lambda", "Errors", {"FunctionName": "my-api"}, "Sum")
-
-if errors['summary']['max'] > 0:
-    # Get error logs
-    logs = get_lambda_logs("my-api", filter_pattern="ERROR")
-
-    # Analyze the role
-    role = analyze_role("my-api-execution-role")
-
-    # Check costs
-    costs = get_cost_by_service(days_back=7)
+aws = AWSClient(profile="prod", region="us-west-2")
+costs = get_cost_by_service(days_back=30, aws_client=aws)
 ```
 
 ---
 
 ## Tool Categories
 
-| Category | Tools | Use Case |
-|----------|-------|----------|
-| **Monitoring** | get_lambda_logs, get_metric, get_recent_errors | Real-time monitoring and alerting |
-| **Analysis** | get_log_insights, detect_cost_anomalies | Deep dive investigations |
-| **Security** | analyze_role, explain_policy, find_overpermissive_roles, analyze_security_group, find_overpermissive_security_groups | Security audits and compliance |
-| **Cost** | get_cost_and_usage, get_cost_by_service, get_cost_forecast, find_unused_resources | Budget management and optimization |
-| **Infrastructure** | explain_changeset, analyze_ec2_instance, get_ec2_inventory | Change management, deployments, and inventory |
+| Category | Count | Purpose |
+|----------|-------|---------|
+| `cloudwatch` | 4 | CloudWatch Logs and Metrics |
+| `cloudformation` | 1 | CloudFormation changesets |
+| `iam` | 3 | IAM role and policy analysis |
+| `iam_security` | 8 | IAM security auditing |
+| `cost` | 4 | Cost Explorer basics |
+| `cost_analytics` | 6 | Advanced cost analysis |
+| `cost_waste` | 5 | Waste detection |
+| `ec2` | 5 | EC2 instance analysis |
+| `ec2_advanced` | 4 | EC2 performance/scaling |
+| `s3` | 5 | S3 bucket analysis |
+| `s3_advanced` | 7 | S3 optimization |
+| `ebs` | 6 | EBS volume optimization |
+
+---
+
+## Error Handling
+
+All tools return structured JSON, even on errors:
+
+```python
+result = analyze_ec2_instance("i-nonexistent")
+
+if 'error' in result:
+    print(f"Error: {result['error']}")
+elif 'warning' in result:
+    print(f"Warning: {result['warning']}")
+else:
+    # Success - use the data
+    print(result)
+```
 
 ---
 
 ## Best Practices
 
-1. **Start with metrics** before diving into logs (faster)
-2. **Use filter patterns** to reduce log volume
-3. **Set appropriate time ranges** to avoid timeouts
-4. **Cache results** when running repeated queries
-5. **Use custom clients** for multi-account/region scenarios
-6. **Handle errors gracefully** - all tools return structured errors
+1. **Start broad, then narrow**: Use inventory/listing tools before detailed analysis
+2. **Cache results**: Store results for repeated analysis
+3. **Use filters**: Reduce data volume with appropriate filters
+4. **Handle errors**: Always check for 'error' or 'warning' in responses
+5. **Custom clients**: Use AWSClient for multi-account/region scenarios
+6. **Time ranges**: Adjust `days_back` parameters based on your needs
 
 ---
 
-For more examples, see:
-- [examples/basic_usage.py](examples/basic_usage.py)
-- [examples/test_new_tools.py](examples/test_new_tools.py)
-- [demo_real_insights.py](demo_real_insights.py)
+## Examples
+
+See the [examples](examples/) directory:
+- `strands_integration.py` - 9 Strands integration patterns
+- `basic_usage.py` - Standalone tool usage
+- `test_imports.py` - Verify installation
+
+---
+
+## More Information
+
+- [QUICKSTART.md](QUICKSTART.md) - Getting started guide
+- [CHANGELOG.md](CHANGELOG.md) - Version history
+- [AWS Strands Docs](https://strandsagents.com/) - Official Strands framework
+
+---
+
+**StrandKit v2.0.0** - 60 AWS tools for building AI agents

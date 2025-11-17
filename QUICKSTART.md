@@ -1,538 +1,447 @@
 # StrandKit Quick Start Guide
 
-**Version 0.2.0** - Complete AWS Toolkit with 14 Production-Ready Tools
+**Version 2.0.0** - AWS Companion SDK for Strands Agents
 
-## Installation (Development Mode)
+StrandKit provides 60 AWS tools designed to work seamlessly with [AWS Strands Agents](https://strandsagents.com/). Build powerful AI agents that can monitor, analyze, and optimize your AWS infrastructure.
 
-Since this is in development, you can use it directly:
+## Installation
 
 ```bash
-cd StrandKit
-export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+pip install strands-agents strandkit boto3
 ```
 
-Or create a virtual environment and install in editable mode:
+Or for development:
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+git clone https://github.com/yourusername/StrandKit.git
+cd StrandKit
 pip install -e .
 ```
 
 ## Prerequisites
 
 1. **AWS Credentials**
-   - Configure AWS CLI: `aws configure`
-   - Or use AWS profiles in `~/.aws/credentials`
+   ```bash
+   aws configure
+   ```
 
-2. **Python 3.8+**
-   - Install boto3: `pip install boto3`
+2. **Anthropic API Key** (for Claude models)
+   ```bash
+   export ANTHROPIC_API_KEY='your-key-here'
+   ```
 
-## Available Tools
+3. **Python 3.8+**
 
-StrandKit provides 14 tools across 4 categories:
-- **CloudWatch** (4 tools): Logs, metrics, insights queries, error detection
-- **IAM** (3 tools): Role analysis, policy explanation, security scanning
-- **Cost** (4 tools): Usage analysis, forecasting, anomaly detection
-- **CloudFormation** (1 tool): Changeset analysis
+## What's Included
+
+StrandKit provides **60 tools** across **12 categories**:
+
+| Category | Tools | Purpose |
+|----------|-------|---------|
+| **CloudWatch** | 4 | Logs, metrics, insights queries |
+| **CloudFormation** | 1 | Changeset analysis |
+| **IAM** | 3 | Role/policy analysis |
+| **IAM Security** | 8 | Security auditing, compliance |
+| **Cost** | 4 | Usage, forecasting, anomalies |
+| **Cost Analytics** | 6 | Budgets, RI analysis, optimization |
+| **Cost Waste** | 5 | Zombie resources, idle detection |
+| **EC2** | 5 | Instance analysis, inventory |
+| **EC2 Advanced** | 4 | Performance, scaling, spot |
+| **S3** | 5 | Bucket analysis, security |
+| **S3 Advanced** | 7 | Storage optimization, lifecycle |
+| **EBS** | 6 | Volume optimization, encryption |
 
 See [TOOLS.md](TOOLS.md) for complete API reference.
 
 ---
 
-## Using the Tools
+## Three Ways to Use StrandKit
 
-### CloudWatch: Get Lambda Logs
+### 1. With Strands Agents (Recommended)
 
-```python
-from strandkit.tools.cloudwatch import get_lambda_logs
-
-# Get logs from the last hour
-logs = get_lambda_logs("my-lambda-function", start_minutes=60)
-
-print(f"Total events: {logs['total_events']}")
-print(f"Errors found: {logs['error_count']}")
-
-# Print error messages
-for event in logs['events']:
-    if 'ERROR' in event['message']:
-        print(f"[{event['timestamp']}] {event['message']}")
-```
-
-**Filter for specific patterns:**
+Use all 60 tools with AWS Strands Agents framework:
 
 ```python
-# Only get ERROR logs
-error_logs = get_lambda_logs(
-    "my-function",
-    start_minutes=30,
-    filter_pattern="ERROR"
-)
-```
+from strands import Agent
+from strandkit.strands import get_all_tools
 
-### 2. Query CloudWatch Metrics
-
-```python
-from strandkit.tools.cloudwatch import get_metric
-
-# Get Lambda errors over last 2 hours
-errors = get_metric(
-    namespace="AWS/Lambda",
-    metric_name="Errors",
-    dimensions={"FunctionName": "my-api"},
-    statistic="Sum",
-    period=300,  # 5-minute intervals
-    start_minutes=120
+# Create agent with all 60 AWS tools
+agent = Agent(
+    model="anthropic.claude-3-5-haiku",
+    tools=get_all_tools(),
+    system_prompt="You are an AWS infrastructure expert"
 )
 
-print(f"Summary: {errors['summary']}")
-# Output: {'min': 0, 'max': 10, 'avg': 2.5, 'count': 24}
-
-# Plot datapoints
-for point in errors['datapoints']:
-    print(f"{point['timestamp']}: {point['value']}")
+# Ask the agent anything about your AWS account
+response = agent("Find security issues in my IAM roles")
+print(response)
 ```
 
-**Common metrics:**
+### 2. Specialized Agents (Category-Based)
+
+Create focused agents with specific tool categories:
 
 ```python
-# Lambda duration (average)
-duration = get_metric(
-    namespace="AWS/Lambda",
-    metric_name="Duration",
-    dimensions={"FunctionName": "my-function"},
-    statistic="Average"
+from strands import Agent
+from strandkit.strands import get_tools_by_category
+
+# Security auditing agent
+security_agent = Agent(
+    model="anthropic.claude-3-5-sonnet",
+    tools=(
+        get_tools_by_category('iam') +
+        get_tools_by_category('iam_security') +
+        get_tools_by_category('ec2')
+    ),
+    system_prompt="""You are a security auditor specializing in AWS.
+    Focus on IAM roles, permissions, and security group configurations."""
 )
 
-# Lambda invocations (count)
-invocations = get_metric(
-    namespace="AWS/Lambda",
-    metric_name="Invocations",
-    dimensions={"FunctionName": "my-function"},
-    statistic="Sum"
-)
-
-# DynamoDB throttles
-throttles = get_metric(
-    namespace="AWS/DynamoDB",
-    metric_name="UserErrors",
-    dimensions={"TableName": "my-table"},
-    statistic="Sum"
-)
+response = security_agent("Audit my AWS account for security risks")
 ```
 
-### 3. Explain CloudFormation Changeset
+### 3. Standalone Tools (No Agent)
+
+Use tools directly in your Python scripts:
 
 ```python
-from strandkit.tools.cloudformation import explain_changeset
+from strandkit import find_overpermissive_roles, get_cost_by_service
 
-# Analyze a changeset before applying
-result = explain_changeset(
-    changeset_name="my-app-changeset-123",
-    stack_name="my-app-stack"
-)
+# IAM security scan
+roles = find_overpermissive_roles()
+print(f"Found {roles['summary']['high']} high-risk roles")
 
-print(f"Status: {result['status']}")
-print(f"Total changes: {result['summary']['total_changes']}")
-
-# Check recommendations
-for rec in result['recommendations']:
-    print(rec)
-
-# Review high-risk changes
-for change in result['changes']:
-    if change['risk_level'] == 'high':
-        print(f"⚠️ {change['details']}")
-```
-
-### 4. Using Custom AWS Profiles/Regions
-
-```python
-from strandkit.core.aws_client import AWSClient
-from strandkit.tools.cloudwatch import get_lambda_logs
-
-# Create client for specific profile and region
-aws = AWSClient(profile="dev", region="us-west-2")
-
-# Pass to tools
-logs = get_lambda_logs(
-    "my-function",
-    start_minutes=60,
-    aws_client=aws
-)
-```
-
-## Real-World Examples
-
-### Debug a Lambda Function
-
-```python
-from strandkit.tools.cloudwatch import get_lambda_logs, get_metric
-
-function_name = "my-api-function"
-
-# 1. Check error metrics
-errors = get_metric(
-    namespace="AWS/Lambda",
-    metric_name="Errors",
-    dimensions={"FunctionName": function_name},
-    statistic="Sum",
-    period=300,
-    start_minutes=120
-)
-
-if errors['summary']['max'] > 0:
-    print(f"⚠️ Found {errors['summary']['max']} errors in a 5-min period")
-
-    # 2. Get error logs
-    error_logs = get_lambda_logs(
-        function_name,
-        start_minutes=120,
-        filter_pattern="ERROR"
-    )
-
-    # 3. Print recent errors
-    print("\nRecent errors:")
-    for event in error_logs['events'][-10:]:
-        print(f"  {event['timestamp']}: {event['message'][:100]}")
-```
-
-### Review CloudFormation Changes Before Deploy
-
-```python
-from strandkit.tools.cloudformation import explain_changeset
-
-changeset = explain_changeset("my-changeset", "my-stack")
-
-# Check for dangerous changes
-high_risk = [c for c in changeset['changes'] if c['risk_level'] == 'high']
-
-if high_risk:
-    print("⚠️ HIGH RISK CHANGES DETECTED:")
-    for change in high_risk:
-        print(f"  - {change['details']}")
-
-    print("\nRecommendations:")
-    for rec in changeset['recommendations']:
-        print(f"  {rec}")
-
-    response = input("\nProceed with deployment? (yes/no): ")
-    if response.lower() != 'yes':
-        print("Deployment cancelled.")
-```
-
-### Monitor Multiple Functions
-
-```python
-from strandkit.tools.cloudwatch import get_metric
-
-functions = ["auth-api", "user-api", "payment-api"]
-
-print("Error rates (last hour):\n")
-for func in functions:
-    errors = get_metric(
-        namespace="AWS/Lambda",
-        metric_name="Errors",
-        dimensions={"FunctionName": func},
-        statistic="Sum",
-        period=3600,  # 1 hour
-        start_minutes=60
-    )
-
-    total_errors = sum(p['value'] for p in errors['datapoints'])
-    status = "🔴" if total_errors > 10 else "🟢"
-    print(f"{status} {func}: {total_errors} errors")
-```
-
-## Testing Without AWS Calls
-
-Run the import test to verify everything is set up:
-
-```bash
-python3 examples/test_imports.py
-```
-
-Expected output:
-```
-============================================================
-StrandKit Import Test
-============================================================
-
-Testing StrandKit imports...
-
-✓ strandkit.core.aws_client.AWSClient
-✓ strandkit.core.schema (ToolSchema, ToolParameter)
-✓ strandkit.core.base_agent.BaseAgent
-✓ strandkit.tools.cloudwatch (get_lambda_logs, get_metric)
-✓ strandkit.tools.cloudformation.explain_changeset
-✓ strandkit.agents.infra_debugger.InfraDebuggerAgent
-✓ strandkit (top-level imports)
-
-============================================================
-All imports successful!
-============================================================
-```
-
-## Error Handling
-
-All tools return structured JSON even on errors:
-
-```python
-logs = get_lambda_logs("non-existent-function", start_minutes=60)
-
-if 'error' in logs or 'warning' in logs:
-    print(f"Warning: {logs.get('warning', logs.get('error'))}")
-else:
-    print(f"Found {logs['total_events']} events")
-```
-
-## Next Steps
-
-1. **Try the examples:**
-   ```bash
-   python3 examples/basic_usage.py
-   ```
-
-2. **Customize for your use case:**
-   - Replace function names with your actual Lambda functions
-   - Adjust time ranges as needed
-   - Add error handling for production use
-
-3. **Build on top:**
-   - Create scripts for common debugging tasks
-   - Integrate with alerting systems
-   - Build dashboards using the data
-
-## Troubleshooting
-
-**ImportError: No module named 'strandkit'**
-- Add to PYTHONPATH: `export PYTHONPATH="${PYTHONPATH}:$(pwd)"`
-- Or use sys.path in your script (see examples/test_imports.py)
-
-**NoCredentialsError**
-- Run `aws configure` to set up AWS credentials
-- Or set environment variables: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
-
-**ResourceNotFound errors**
-- Verify the Lambda function/stack exists
-- Check you're using the correct AWS region
-- Ensure you have permissions to access the resources
-
-## What's Coming
-
-- **Agent framework** (InfraDebuggerAgent) - pending AWS Strands integration
-- **CLI interface** - `strandkit run debugger`
-- **More tools** - IAM analyzer, cost insights
-- **Tests and examples**
-
-For the latest status, see `PROJECT_STATUS.md`.
-
----
-
-### IAM: Analyze Role Security
-
-```python
-from strandkit.tools.iam import analyze_role, find_overpermissive_roles
-
-# Analyze a specific role
-role = analyze_role("MyAppRole")
-print(f"Risk Level: {role['risk_assessment']['risk_level']}")
-
-for recommendation in role['recommendations']:
-    print(f"  {recommendation}")
-
-# Scan all roles for issues
-audit = find_overpermissive_roles()
-print(f"\nFound {len(audit['overpermissive_roles'])} risky roles:")
-for r in audit['overpermissive_roles'][:5]:
-    print(f"  {r['role_name']} - {r['risk_level']}")
-```
-
-**Example output:**
-```
-Risk Level: medium
-  ⚠️ Replace wildcard resources (*) with specific resource ARNs
-
-Found 12 risky roles:
-  veridano-admin-dashboard-lambda-role - medium
-  veridano-lambda-execution-role - medium
-  ...
+# Cost analysis
+costs = get_cost_by_service(days_back=30)
+print(f"Total spend: ${costs['total_cost']:.2f}")
 ```
 
 ---
 
-### Cost: Analyze Spending
+## Quick Examples
+
+### Example 1: Cost Optimization Agent
 
 ```python
-from strandkit.tools.cost import get_cost_by_service, detect_cost_anomalies
+from strands import Agent
+from strandkit.strands import get_tools_by_category
 
-# Get cost breakdown
-costs = get_cost_by_service(days_back=30, top_n=5)
-print(f"Total: ${costs['total_cost']:.2f}\n")
-for svc in costs['services']:
-    print(f"{svc['service']}: ${svc['cost']:.2f} ({svc['percentage']:.1f}%)")
-
-# Detect anomalies
-anomalies = detect_cost_anomalies(days_back=30)
-if anomalies['total_anomalies'] > 0:
-    print(f"\n⚠️ {anomalies['total_anomalies']} cost spikes detected")
-```
-
-**Example output:**
-```
-Total: $148.84
-
-Amazon RDS: $130.78 (87.9%)
-AWS WAF: $7.80 (5.2%)
-CloudWatch: $3.93 (2.6%)
-VPC: $3.55 (2.4%)
-Secrets Manager: $1.18 (0.8%)
-```
-
----
-
-### Advanced: Logs Insights Queries
-
-```python
-from strandkit.tools.cloudwatch_enhanced import get_log_insights
-
-# Run custom query
-results = get_log_insights(
-    log_group_names=["/aws/lambda/my-function"],
-    query_string="""
-        fields @timestamp, @message
-        | filter @message like /ERROR/
-        | stats count() by bin(5m)
-        | limit 100
-    """,
-    start_minutes=120
+cost_agent = Agent(
+    model="anthropic.claude-3-5-haiku",
+    tools=(
+        get_tools_by_category('cost') +
+        get_tools_by_category('cost_analytics') +
+        get_tools_by_category('cost_waste')
+    ),
+    system_prompt="You are a cloud cost optimization expert."
 )
 
-print(f"Scanned {results['statistics']['records_scanned']} records")
-print(f"Found {results['statistics']['records_matched']} matches")
+# Agent uses 15 cost-related tools to analyze your spending
+response = cost_agent("Find ways to reduce my AWS costs")
+print(response)
+```
+
+### Example 2: Security Auditor Agent
+
+```python
+from strands import Agent
+from strandkit.strands import StrandKitCategoryProvider
+
+security_agent = Agent(
+    model="anthropic.claude-3-5-sonnet",
+    tools=[StrandKitCategoryProvider(['iam', 'iam_security', 'ec2'])],
+    system_prompt="You are a security auditor. Find and explain security risks."
+)
+
+response = security_agent("Check for overpermissive IAM roles and security groups")
+print(response)
+```
+
+### Example 3: Infrastructure Debugger
+
+```python
+from strands import Agent
+from strandkit.strands import get_tools_by_category
+
+debug_agent = Agent(
+    model="anthropic.claude-3-5-haiku",
+    tools=(
+        get_tools_by_category('cloudwatch') +
+        get_tools_by_category('ec2')
+    ),
+    system_prompt="You are an infrastructure debugging expert."
+)
+
+response = debug_agent("My Lambda function 'api-handler' is throwing errors. Debug it.")
+print(response)
+```
+
+### Example 4: Multi-Agent System
+
+```python
+from strands import Agent
+from strandkit.strands import get_tools_by_category
+
+# Create specialized agents
+security = Agent(
+    name="security-auditor",
+    model="anthropic.claude-3-5-haiku",
+    tools=get_tools_by_category('iam') + get_tools_by_category('iam_security')
+)
+
+cost = Agent(
+    name="cost-optimizer",
+    model="anthropic.claude-3-5-haiku",
+    tools=get_tools_by_category('cost') + get_tools_by_category('cost_waste')
+)
+
+# Each agent works independently
+sec_report = security("Audit IAM roles")
+cost_report = cost("Find waste")
 ```
 
 ---
 
-## Complete Examples
+## Standalone Usage (No Strands)
 
-### Security Audit Workflow
-
-```python
-from strandkit import find_overpermissive_roles, analyze_role
-
-# 1. Scan all roles
-audit = find_overpermissive_roles()
-
-# 2. Analyze high-risk roles
-for role in audit['overpermissive_roles']:
-    if role['risk_level'] in ['critical', 'high']:
-        details = analyze_role(role['role_name'])
-        
-        print(f"\n🔴 {role['role_name']}")
-        print(f"   Services: {', '.join(details['permissions_summary']['services_accessed'][:3])}")
-        
-        for rec in details['recommendations']:
-            print(f"   {rec}")
-```
-
-### Cost Optimization Workflow
+You can use StrandKit tools directly without Strands:
 
 ```python
 from strandkit import (
+    find_overpermissive_roles,
     get_cost_by_service,
-    detect_cost_anomalies,
-    get_cost_forecast
+    analyze_ec2_instance,
+    find_zombie_resources
 )
 
-# 1. Current spending
-costs = get_cost_by_service(days_back=30)
-print(f"Last 30 days: ${costs['total_cost']:.2f}")
+# IAM security scan
+print("Scanning IAM roles...")
+roles = find_overpermissive_roles()
+print(f"  High risk: {roles['summary']['high']}")
+print(f"  Medium risk: {roles['summary']['medium']}")
 
-# 2. Check for anomalies
-anomalies = detect_cost_anomalies(days_back=30)
-if anomalies['total_anomalies'] > 0:
-    print(f"⚠️ {anomalies['total_anomalies']} unusual spending days detected")
+# Cost analysis
+print("\nAnalyzing costs...")
+costs = get_cost_by_service(days_back=30, top_n=5)
+for svc in costs['services']:
+    print(f"  {svc['service']}: ${svc['cost']:.2f}")
 
-# 3. Forecast next month
-forecast = get_cost_forecast(days_forward=30)
-print(f"Predicted next 30 days: ${forecast['forecast']['predicted_cost']:.2f}")
+# EC2 instance analysis
+print("\nAnalyzing instance...")
+analysis = analyze_ec2_instance("i-1234567890abcdef0")
+print(f"  Monthly cost: ${analysis['cost_estimate']['monthly_cost']:.2f}")
+print(f"  CPU avg: {analysis['metrics']['cpu_utilization']['average']:.1f}%")
+
+# Find waste
+print("\nFinding zombie resources...")
+zombies = find_zombie_resources()
+print(f"  Potential savings: ${zombies['total_monthly_waste']:.2f}/month")
 ```
 
-### Infrastructure Debugging Workflow
+---
+
+## Custom AWS Profiles & Regions
 
 ```python
-from strandkit import get_lambda_logs, get_metric, analyze_role
+from strandkit.core.aws_client import AWSClient
+from strandkit import get_cost_by_service
 
-function_name = "my-api"
+# Create client for specific profile/region
+aws = AWSClient(profile="production", region="us-west-2")
 
-# 1. Check metrics
-errors = get_metric(
-    "AWS/Lambda", "Errors",
-    {"FunctionName": function_name},
-    "Sum"
+# Pass to any tool
+costs = get_cost_by_service(days_back=30, aws_client=aws)
+```
+
+---
+
+## Integration Patterns
+
+### ToolProvider (Lazy Loading)
+
+Load tools only when needed:
+
+```python
+from strands import Agent
+from strandkit.strands import StrandKitToolProvider
+
+agent = Agent(
+    tools=[StrandKitToolProvider()],  # Loads all 60 tools lazily
+    model="anthropic.claude-3-5-haiku"
 )
+```
 
-if errors['summary']['max'] > 0:
-    # 2. Get error logs
-    logs = get_lambda_logs(function_name, filter_pattern="ERROR")
-    
-    # 3. Check permissions
-    role_name = f"{function_name}-execution-role"
-    role = analyze_role(role_name)
-    
-    print("Issues found:")
-    print(f"  Errors: {errors['summary']['max']}")
-    print(f"  Recent log entries: {logs['total_events']}")
-    print(f"  Role risk: {role['risk_assessment']['risk_level']}")
+### Category Provider
+
+Load specific categories:
+
+```python
+from strandkit.strands import StrandKitCategoryProvider
+
+agent = Agent(
+    tools=[StrandKitCategoryProvider(['s3', 's3_advanced', 'ebs'])],
+    system_prompt="You are an S3 and EBS storage expert"
+)
+```
+
+### List Available Categories
+
+```python
+from strandkit.strands import list_tool_categories, get_tools_by_category
+
+categories = list_tool_categories()
+print(f"Available categories: {', '.join(categories)}")
+
+# See how many tools per category
+for cat in categories:
+    tools = get_tools_by_category(cat)
+    print(f"  {cat}: {len(tools)} tools")
 ```
 
 ---
 
 ## Real-World Use Cases
 
-### 1. Daily Security Check
+### 1. Daily Security Check Script
 
-```bash
-python3 -c "
-from strandkit import find_overpermissive_roles
-audit = find_overpermissive_roles()
-critical = audit['summary']['critical']
-high = audit['summary']['high']
-if critical > 0 or high > 0:
-    print(f'⚠️ Security Alert: {critical} critical, {high} high-risk roles')
+```python
+#!/usr/bin/env python3
+from strandkit import find_overpermissive_roles, find_overpermissive_security_groups
+
+# Scan IAM
+iam_scan = find_overpermissive_roles()
+critical_iam = iam_scan['summary']['critical']
+
+# Scan security groups
+sg_scan = find_overpermissive_security_groups()
+critical_sg = sg_scan['summary']['critical']
+
+if critical_iam > 0 or critical_sg > 0:
+    print(f"⚠️ CRITICAL: {critical_iam} IAM roles, {critical_sg} security groups")
     exit(1)
-print('✅ Security check passed')
-"
+
+print("✅ Security check passed")
 ```
 
-### 2. Cost Alert Script
+### 2. Cost Alert Monitor
 
 ```python
 from strandkit import detect_cost_anomalies
 
-anomalies = detect_cost_anomalies(days_back=7, threshold_percentage=15)
+anomalies = detect_cost_anomalies(days_back=7, threshold_percentage=25)
 
 if anomalies['total_anomalies'] > 0:
-    # Send alert
-    high_severity = [a for a in anomalies['anomalies'] if a['severity'] == 'high']
-    if high_severity:
-        send_alert(f"High cost spike detected: {high_severity[0]['date']}")
+    for a in anomalies['anomalies']:
+        if a['severity'] == 'high':
+            print(f"🔴 Cost spike on {a['date']}: ${a['cost']:.2f}")
+            # Send alert to Slack/email
 ```
 
-### 3. Lambda Monitor Dashboard
+### 3. Resource Cleanup
 
 ```python
-from strandkit import get_metric, get_lambda_logs
+from strandkit import find_zombie_resources
 
-functions = ["api-1", "api-2", "worker-1"]
+zombies = find_zombie_resources()
 
-for func in functions:
-    errors = get_metric("AWS/Lambda", "Errors", {"FunctionName": func}, "Sum", start_minutes=60)
-    invocations = get_metric("AWS/Lambda", "Invocations", {"FunctionName": func}, "Sum", start_minutes=60)
-    
-    error_rate = (errors['summary']['total'] / invocations['summary']['total'] * 100) if invocations['summary']['total'] > 0 else 0
-    
-    status = "🔴" if error_rate > 1 else "🟡" if error_rate > 0.1 else "🟢"
-    print(f"{status} {func}: {error_rate:.2f}% error rate")
+print(f"Potential savings: ${zombies['total_monthly_waste']:.2f}/month")
+print(f"  Unattached volumes: ${zombies['breakdown']['unattached_volumes']:.2f}")
+print(f"  Old snapshots: ${zombies['breakdown']['old_snapshots']:.2f}")
+print(f"  Unused IPs: ${zombies['breakdown']['unused_elastic_ips']:.2f}")
 ```
+
+---
+
+## Error Handling
+
+All tools return structured JSON, even on errors:
+
+```python
+from strandkit import analyze_ec2_instance
+
+result = analyze_ec2_instance("i-nonexistent")
+
+if 'error' in result:
+    print(f"Error: {result['error']}")
+elif 'warning' in result:
+    print(f"Warning: {result['warning']}")
+else:
+    print(f"Success: {result['instance_details']}")
+```
+
+---
+
+## Troubleshooting
+
+**ImportError: No module named 'strandkit'**
+```bash
+pip install -e .
+# or
+export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+```
+
+**NoCredentialsError**
+```bash
+aws configure
+# or
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+```
+
+**ResourceNotFound**
+- Verify resource exists in correct region
+- Check AWS credentials have necessary permissions
+- Confirm resource name/ID is correct
+
+---
+
+## Next Steps
+
+1. **Try the examples:**
+   ```bash
+   python examples/strands_integration.py
+   ```
+
+2. **Read the docs:**
+   - [TOOLS.md](TOOLS.md) - Complete API reference for all 60 tools
+   - [CHANGELOG.md](CHANGELOG.md) - Version history and migration guides
+   - [AWS Strands Docs](https://strandsagents.com/) - Official Strands framework docs
+
+3. **Build your own agent:**
+   - Choose relevant tool categories
+   - Write a focused system prompt
+   - Test with real AWS resources
+
+---
+
+## Examples in This Repo
+
+- `examples/strands_integration.py` - 9 integration patterns
+- `examples/basic_usage.py` - Standalone tool usage
+- `examples/test_imports.py` - Verify installation
+
+---
+
+## What's New in v2.0.0
+
+- ✅ Full AWS Strands Agents integration
+- ✅ 60 tools (up from 14 in v0.2.0)
+- ✅ 12 categories (CloudWatch, IAM, Cost, EC2, S3, EBS, etc.)
+- ✅ `@tool` decorator on all functions
+- ✅ ToolProvider pattern for lazy loading
+- ✅ Category-based tool selection
+- ✅ 100% backward compatible standalone usage
+
+See [CHANGELOG.md](CHANGELOG.md) for migration guide from v1.0.0.
+
+---
+
+## Support
+
+- **Issues:** [GitHub Issues](https://github.com/yourusername/StrandKit/issues)
+- **Strands Docs:** [strandsagents.com](https://strandsagents.com/)
+- **AWS Docs:** [AWS Documentation](https://docs.aws.amazon.com/)
+
+---
+
+**StrandKit v2.0.0** - Companion SDK for AWS Strands Agents
