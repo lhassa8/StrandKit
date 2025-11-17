@@ -38,39 +38,6 @@ StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.co
 
 **Also works standalone** - Use tools directly without Strands for scripting and automation
 
-## Why StrandKit?
-
-**The Problem:**
-Managing AWS at scale is hard. Finding cost waste requires checking multiple services (EC2, EBS, S3, Load Balancers). Security audits mean manually reviewing hundreds of IAM roles and policies. Performance issues need correlating CloudWatch metrics across instances. The AWS console and CLI are great for individual resources, but terrible for analysis across your entire infrastructure.
-
-**The Solution:**
-StrandKit does the heavy lifting for you. Instead of writing the same boto3 code over and over, or clicking through dozens of console pages, you call a single Python function. StrandKit queries the AWS APIs, aggregates data from multiple sources, analyzes patterns, calculates costs, and gives you specific recommendations.
-
-**How It Works:**
-1. **You call a function** - Simple Python API, pass in basic parameters (or none for account-wide scans)
-2. **StrandKit queries AWS** - Uses boto3 to fetch data from CloudWatch, Cost Explorer, EC2, IAM, S3, etc.
-3. **Data gets analyzed** - Correlates information, detects patterns, calculates metrics and costs
-4. **You get actionable results** - Structured JSON with findings, recommendations, and cost estimates
-
-**Example:**
-```python
-# Instead of this (50+ lines of boto3 code):
-# - List all IAM roles
-# - Get policies for each role
-# - Parse JSON policies
-# - Check for wildcards and admin access
-# - Assess trust relationships
-# - Generate risk scores
-# - Format results...
-
-# You do this (1 line):
-from strandkit import find_overpermissive_roles
-risky_roles = find_overpermissive_roles()
-print(f"Found {risky_roles['summary']['high_risk']} high-risk roles")
-```
-
-No infrastructure to deploy. No configuration files. No learning curve. Just import and run.
-
 ## What is AWS Strands Agents?
 
 **[AWS Strands Agents](https://strandsagents.com/)** is an open-source Python SDK from AWS for building production-ready, multi-agent AI systems. It provides:
@@ -85,36 +52,48 @@ Learn more: [strandsagents.com](https://strandsagents.com/latest/)
 
 ## Why StrandKit?
 
-**StrandKit is a companion SDK that supercharges AWS Strands Agents with 60 production-ready AWS tools.**
+**StrandKit supercharges AWS Strands Agents with 60 production-ready AWS tools.**
 
-### The Problem
-AWS Strands Agents gives you the framework to build AI agents, but you still need to write all the AWS integration code yourself:
-- Want to analyze IAM security? Write boto3 code to scan roles, parse policies, assess risks...
-- Want to find cost waste? Write code to query Cost Explorer, analyze snapshots, check unused resources...
-- Want to debug Lambda errors? Write code to fetch logs, parse CloudWatch metrics, correlate events...
+### Strands Gives You the Framework, StrandKit Gives You the Tools
 
-**Every AWS use case requires 50-200 lines of boto3 boilerplate.**
+**AWS Strands Agents** provides the agent framework - orchestration, multi-agent patterns, observability, and guardrails. But to build AWS agents, you still need to write all the integration code yourself.
 
-### The Solution
-StrandKit provides 60 pre-built AWS tools that work seamlessly with Strands Agents:
+**StrandKit fills that gap** - it's a tool library specifically designed for Strands Agents that handle common AWS operations:
+
+| What You Want Your Agent to Do | Without StrandKit | With StrandKit |
+|--------------------------------|-------------------|----------------|
+| "Find overpermissive IAM roles" | Write 150+ lines of boto3 code to scan roles, parse policies, assess risks | `find_overpermissive_roles()` - 1 function call |
+| "Analyze my AWS costs" | Write code to query Cost Explorer, aggregate by service, detect anomalies | `get_cost_by_service()` + `detect_cost_anomalies()` |
+| "Debug Lambda errors" | Write code to fetch CloudWatch logs, parse metrics, correlate events | `get_lambda_logs()` + `get_metric()` |
+| "Find wasted spend" | Write code to scan EC2, EBS, S3, snapshots, calculate costs | `find_zombie_resources()` |
+
+### Drop-In Ready for Strands Agents
 
 ```python
-# Instead of writing this yourself:
-# - boto3 client setup
-# - IAM role enumeration
-# - Policy document parsing
-# - Wildcard detection logic
-# - Risk assessment algorithms
-# - Trust relationship analysis
-# - Output formatting
-# ... 150+ lines of code
+from strands import Agent
+from strandkit.strands import get_all_tools
 
-# Use StrandKit's ready-made tool:
-from strandkit import find_overpermissive_roles
-risky_roles = find_overpermissive_roles()
+# Create a Strands agent with all 60 StrandKit AWS tools
+agent = Agent(
+    name="aws-security-auditor",
+    tools=get_all_tools(),  # All tools ready to use
+    model="anthropic.claude-3-5-sonnet"
+)
+
+# Agent can now analyze your entire AWS account
+response = agent("Audit my AWS account for security risks and cost waste")
+# Agent automatically uses: find_overpermissive_roles(), find_overpermissive_security_groups(),
+#                          find_zombie_resources(), analyze_idle_resources(), etc.
 ```
 
-**StrandKit tools are drop-in ready for Strands Agents** - just register them and your agents can use them immediately.
+### Built For Strands
+
+- ✅ **@tool decorator** - Every function has Strands `@tool` decorator for instant integration
+- ✅ **Auto-schemas** - Tool schemas automatically generated for Strands agents
+- ✅ **Category filtering** - Load only the tools you need (IAM, Cost, EC2, S3, etc.)
+- ✅ **Production-ready** - All 60 tools tested with real AWS accounts
+- ✅ **Actionable output** - Every tool returns recommendations, not just raw data
+- ✅ **Standalone compatible** - Also works without Strands for scripting
 
 ## Three Ways to Use StrandKit
 
