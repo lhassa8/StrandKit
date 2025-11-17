@@ -39,16 +39,16 @@ from strandkit.strands.registry import (
 )
 
 from strandkit.strands.provider import (
-    StrandKitToolProvider,
-    StrandKitCategoryProvider
+    StrandKitToolProvider,  # Deprecated: returns list of tools
+    StrandKitCategoryProvider  # Deprecated: returns list of tools
 )
 
 __all__ = [
-    # Registry functions
+    # Registry functions (recommended)
     'get_all_tools',
     'get_tools_by_category',
     'list_tool_categories',
-    # ToolProviders
+    # Deprecated compatibility functions
     'StrandKitToolProvider',
     'StrandKitCategoryProvider',
 ]

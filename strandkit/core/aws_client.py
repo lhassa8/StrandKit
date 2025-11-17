@@ -73,6 +73,22 @@ class AWSClient:
         except Exception as e:
             raise NoCredentialsError() from e
 
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        """
+        Pydantic v2 schema generator for AWSClient.
+
+        This tells Pydantic/Strands to treat AWSClient as optional and not serialize it.
+        Agents don't create AWSClient objects - they're for library users only.
+        """
+        from pydantic_core import core_schema
+
+        # Return a schema that accepts None and creates a default AWSClient
+        return core_schema.no_info_after_validator_function(
+            lambda x: None if x is None else x,
+            core_schema.nullable_schema(core_schema.any_schema())
+        )
+
     def get_client(self, service_name: str) -> Any:
         """
         Get a boto3 client for the specified AWS service.
