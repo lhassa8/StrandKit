@@ -47,3 +47,8 @@ dmypy.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Secrets
+.env
+*.key
+*.pem

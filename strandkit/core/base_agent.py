@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 from pathlib import Path
 import json
 import os
+import copy
 
 
 class BaseAgent:
@@ -27,7 +28,7 @@ class BaseAgent:
         profile: AWS profile name for tool execution
         region: AWS region for tool execution
         api_key: Anthropic API key (from env var ANTHROPIC_API_KEY)
-        model: Claude model to use (default: claude-3-5-sonnet-20241022)
+        model: Claude model to use (default: claude-3-5-haiku-20241022)
         max_iterations: Maximum tool-use iterations (default: 10)
 
     Example:
@@ -45,7 +46,7 @@ class BaseAgent:
         profile: Optional[str] = None,
         region: Optional[str] = None,
         api_key: Optional[str] = None,
-        model: str = "claude-3-5-sonnet-20241022",
+        model: str = "claude-3-5-haiku-20241022",
         max_iterations: int = 10,
         verbose: bool = False
     ):
@@ -154,10 +155,65 @@ class BaseAgent:
                 )
 
             result = func(**tool_input)
+
+            # Clean result - remove any non-serializable objects
+            if isinstance(result, dict):
+                cleaned_result = self._clean_result(result)
+                return cleaned_result
             return result
 
         except Exception as e:
             return {'error': str(e)}
+
+    def _clean_result(self, obj):
+        """
+        Recursively clean a result object to remove non-serializable items.
+
+        Args:
+            obj: Object to clean
+
+        Returns:
+            Cleaned object (JSON-serializable)
+        """
+        import json
+        from strandkit.core.aws_client import AWSClient
+
+        if isinstance(obj, dict):
+            cleaned = {}
+            for key, value in obj.items():
+                # Skip aws_client or any AWSClient instances
+                if key == 'aws_client' or isinstance(value, AWSClient):
+                    if self.verbose:
+                        print(f"  [Cleaning] Skipping key '{key}' (AWSClient)")
+                    continue
+
+                # Try to clean the value
+                try:
+                    cleaned_value = self._clean_result(value)
+                    # Verify it's JSON-serializable
+                    json.dumps(cleaned_value)
+                    cleaned[key] = cleaned_value
+                except (TypeError, ValueError) as e:
+                    if self.verbose:
+                        print(f"  [Cleaning] Skipping key '{key}' (not serializable): {e}")
+                    continue
+            return cleaned
+        elif isinstance(obj, list):
+            return [self._clean_result(item) for item in obj]
+        elif isinstance(obj, (str, int, float, bool, type(None))):
+            return obj
+        elif isinstance(obj, AWSClient):
+            # Skip AWSClient objects entirely
+            return None
+        else:
+            # For any other type, verify it's JSON-serializable
+            try:
+                json.dumps(obj)
+                return obj
+            except (TypeError, ValueError):
+                if self.verbose:
+                    print(f"  [Cleaning] Converting {type(obj)} to string")
+                return str(obj)
 
     def run(self, query: str, **kwargs) -> Dict[str, Any]:
         """
@@ -242,21 +298,26 @@ class BaseAgent:
 
             elif response.stop_reason == 'tool_use':
                 # Agent wants to use tools
+                # Convert response.content blocks to plain dicts
                 assistant_content = []
-
                 for block in response.content:
-                    assistant_content.append({
-                        'type': block.type,
-                        'text': block.text if hasattr(block, 'text') else None,
-                        'id': block.id if hasattr(block, 'id') else None,
-                        'name': block.name if hasattr(block, 'name') else None,
-                        'input': block.input if hasattr(block, 'input') else None
-                    })
+                    if block.type == 'text':
+                        assistant_content.append({
+                            'type': 'text',
+                            'text': block.text
+                        })
+                    elif block.type == 'tool_use':
+                        assistant_content.append({
+                            'type': 'tool_use',
+                            'id': block.id,
+                            'name': block.name,
+                            'input': block.input
+                        })
 
-                # Add assistant message
+                # Add assistant message with plain dict content
                 messages.append({
                     "role": "assistant",
-                    "content": response.content
+                    "content": assistant_content
                 })
 
                 # Execute tools
@@ -264,23 +325,30 @@ class BaseAgent:
                 for block in response.content:
                     if block.type == 'tool_use':
                         tool_name = block.name
-                        tool_input = block.input
+                        # Make a deep copy to avoid modifying the original input in assistant_content
+                        tool_input = copy.deepcopy(block.input)
                         tool_use_id = block.id
 
                         if self.verbose:
-                            print(f"  Calling tool: {tool_name}")
+                            print(f"\n  Calling tool: {tool_name}")
                             print(f"  Input: {json.dumps(tool_input, indent=2)}")
 
-                        # Execute tool
+                        # Execute tool (this will add aws_client to tool_input copy)
                         result = self._execute_tool(tool_name, tool_input)
 
                         if self.verbose:
-                            print(f"  Result keys: {list(result.keys()) if isinstance(result, dict) else type(result)}")
+                            print(f"  Result: {list(result.keys()) if isinstance(result, dict) else type(result)}")
+
+                        # Clean and serialize result
+                        if isinstance(result, dict):
+                            result = self._clean_result(result)
+
+                        serialized = json.dumps(result)
 
                         # Record tool call
                         tool_calls.append({
                             'tool': tool_name,
-                            'input': tool_input,
+                            'input': {k: v for k, v in tool_input.items() if k != 'aws_client'},  # Remove aws_client
                             'result': result
                         })
 
@@ -288,7 +356,7 @@ class BaseAgent:
                         tool_results.append({
                             "type": "tool_result",
                             "tool_use_id": tool_use_id,
-                            "content": json.dumps(result)
+                            "content": serialized
                         })
 
                 # Add user message with tool results
