@@ -17,7 +17,7 @@ Example usage:
 For more information, see: https://github.com/yourusername/strandkit
 """
 
-__version__ = "0.10.0"
+__version__ = "2.2.0"
 __author__ = "Your Name"
 
 # Import main agent templates for easy access
@@ -80,6 +80,26 @@ from strandkit.tools.ebs import (
     analyze_ebs_encryption,
     find_ebs_volume_anomalies,
     analyze_ami_usage
+)
+from strandkit.tools.orchestrators import (
+    audit_security,
+    optimize_costs,
+    diagnose_issue,
+    get_aws_overview
+)
+from strandkit.tools.rds import (
+    analyze_rds_instance,
+    find_idle_databases,
+    analyze_rds_backups,
+    get_rds_recommendations,
+    find_rds_security_issues
+)
+from strandkit.tools.vpc import (
+    find_unused_nat_gateways,
+    analyze_vpc_configuration,
+    analyze_data_transfer_costs,
+    analyze_vpc_endpoints,
+    find_network_bottlenecks
 )
 
 __all__ = [
@@ -155,6 +175,23 @@ __all__ = [
     "analyze_auto_scaling_groups",
     "analyze_load_balancers",
     "get_ec2_spot_recommendations",
+    # Orchestrator tools (high-level)
+    "audit_security",
+    "optimize_costs",
+    "diagnose_issue",
+    "get_aws_overview",
+    # RDS/Database tools
+    "analyze_rds_instance",
+    "find_idle_databases",
+    "analyze_rds_backups",
+    "get_rds_recommendations",
+    "find_rds_security_issues",
+    # VPC/Networking tools
+    "find_unused_nat_gateways",
+    "analyze_vpc_configuration",
+    "analyze_data_transfer_costs",
+    "analyze_vpc_endpoints",
+    "find_network_bottlenecks",
 ]
 from strandkit.tools.s3_advanced import (
     analyze_s3_storage_classes,

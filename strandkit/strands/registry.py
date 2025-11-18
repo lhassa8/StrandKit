@@ -20,7 +20,7 @@ from typing import List, Any
 
 def get_all_tools() -> List[Any]:
     """
-    Get all 60 StrandKit tools as @tool-decorated functions.
+    Get all 72 StrandKit tools as @tool-decorated functions.
 
     Returns list of functions ready to pass to Strands Agent.
 
@@ -34,7 +34,8 @@ def get_all_tools() -> List[Any]:
         )
 
     Returns:
-        List of 60 @tool-decorated functions organized by category:
+        List of 64 @tool-decorated functions organized by category:
+        - Orchestrators: 4 tools (high-level)
         - CloudWatch: 4 tools
         - CloudFormation: 1 tool
         - IAM: 3 tools
@@ -55,10 +56,20 @@ def get_all_tools() -> List[Any]:
         # Other modules
         cloudformation, iam, iam_security,
         cost, cost_analytics, cost_waste,
-        ec2, ec2_advanced, s3, s3_advanced, ebs
+        ec2, ec2_advanced, s3, s3_advanced, ebs,
+        # Database and networking
+        rds, vpc,
+        # Orchestrator module
+        orchestrators
     )
 
     return [
+        # Orchestrators (4 high-level tools)
+        orchestrators.audit_security,
+        orchestrators.optimize_costs,
+        orchestrators.diagnose_issue,
+        orchestrators.get_aws_overview,
+
         # CloudWatch (4 tools)
         cloudwatch.get_lambda_logs,
         cloudwatch.get_metric,
@@ -140,6 +151,20 @@ def get_all_tools() -> List[Any]:
         ebs.analyze_ebs_encryption,
         ebs.find_ebs_volume_anomalies,
         ebs.analyze_ami_usage,
+
+        # RDS (5 tools)
+        rds.analyze_rds_instance,
+        rds.find_idle_databases,
+        rds.analyze_rds_backups,
+        rds.get_rds_recommendations,
+        rds.find_rds_security_issues,
+
+        # VPC (5 tools)
+        vpc.find_unused_nat_gateways,
+        vpc.analyze_vpc_configuration,
+        vpc.analyze_data_transfer_costs,
+        vpc.analyze_vpc_endpoints,
+        vpc.find_network_bottlenecks,
     ]
 
 
@@ -149,6 +174,7 @@ def get_tools_by_category(category: str) -> List[Any]:
 
     Args:
         category: Tool category name. Available categories:
+            - 'orchestrators': High-level composite tools (4 tools)
             - 'cloudwatch': CloudWatch Logs and Metrics (4 tools)
             - 'cloudformation': CloudFormation changesets (1 tool)
             - 'iam': IAM role and policy analysis (3 tools)
@@ -161,6 +187,8 @@ def get_tools_by_category(category: str) -> List[Any]:
             - 's3': S3 bucket analysis (5 tools)
             - 's3_advanced': S3 optimization (7 tools)
             - 'ebs': EBS volume optimization (6 tools)
+            - 'rds': RDS database analysis (5 tools)
+            - 'vpc': VPC networking analysis (5 tools)
 
     Returns:
         List of @tool-decorated functions for the category
@@ -184,7 +212,16 @@ def get_tools_by_category(category: str) -> List[Any]:
         ))
     """
     # Import modules on-demand
-    if category == 'cloudwatch':
+    if category == 'orchestrators':
+        from strandkit.tools import orchestrators
+        return [
+            orchestrators.audit_security,
+            orchestrators.optimize_costs,
+            orchestrators.diagnose_issue,
+            orchestrators.get_aws_overview,
+        ]
+
+    elif category == 'cloudwatch':
         from strandkit.tools import cloudwatch, cloudwatch_enhanced
         return [
             cloudwatch.get_lambda_logs,
@@ -300,6 +337,26 @@ def get_tools_by_category(category: str) -> List[Any]:
             ebs.analyze_ami_usage,
         ]
 
+    elif category == 'rds':
+        from strandkit.tools import rds
+        return [
+            rds.analyze_rds_instance,
+            rds.find_idle_databases,
+            rds.analyze_rds_backups,
+            rds.get_rds_recommendations,
+            rds.find_rds_security_issues,
+        ]
+
+    elif category == 'vpc':
+        from strandkit.tools import vpc
+        return [
+            vpc.find_unused_nat_gateways,
+            vpc.analyze_vpc_configuration,
+            vpc.analyze_data_transfer_costs,
+            vpc.analyze_vpc_endpoints,
+            vpc.find_network_bottlenecks,
+        ]
+
     else:
         return []
 
@@ -318,6 +375,7 @@ def list_tool_categories() -> List[str]:
         print(f"Available categories: {', '.join(categories)}")
     """
     return [
+        'orchestrators',
         'cloudwatch',
         'cloudformation',
         'iam',
@@ -330,4 +388,6 @@ def list_tool_categories() -> List[str]:
         's3',
         's3_advanced',
         'ebs',
+        'rds',
+        'vpc',
     ]

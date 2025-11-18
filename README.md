@@ -22,7 +22,7 @@
 
 ## Overview
 
-StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.com/)** that provides **60 production-ready AWS tools** for:
+StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.com/)** that provides **72 production-ready AWS tools** for:
 
 - 💰 **Cost optimization** - Find waste, analyze spending, get rightsizing recommendations
 - 🔒 **Security auditing** - Scan IAM policies, detect misconfigurations, enforce compliance
@@ -30,9 +30,10 @@ StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.co
 - ⚡ **Performance tuning** - Identify bottlenecks, optimize auto-scaling, analyze load balancers
 
 **Perfect for AWS Strands Agents:**
-- **Drop-in ready** - All 60 tools work seamlessly with Strands agents via `get_all_tools()`
+- **Orchestrator tools** - 4 high-level tools designed for common agent tasks (security audit, cost optimization, diagnostics)
+- **Drop-in ready** - All 72 tools work seamlessly with Strands agents via `get_all_tools()`
 - **Auto-generated schemas** - Tool definitions automatically converted to Strands-compatible format
-- **Category organization** - Filter by IAM, EC2, S3, Cost, CloudWatch for specialized agents
+- **Category organization** - Filter by orchestrators, IAM, EC2, S3, Cost, CloudWatch for specialized agents
 - **Production-tested** - All tools validated with real AWS accounts, handles edge cases gracefully
 - **Actionable insights** - Every tool provides recommendations, not just raw data
 
@@ -52,7 +53,7 @@ Learn more: [strandsagents.com](https://strandsagents.com/latest/)
 
 ## Why StrandKit?
 
-**StrandKit supercharges AWS Strands Agents with 60 production-ready AWS tools.**
+**StrandKit supercharges AWS Strands Agents with 72 production-ready AWS tools** (4 orchestrators + 68 granular).
 
 ### Strands Gives You the Framework, StrandKit Gives You the Tools
 
@@ -62,36 +63,40 @@ Learn more: [strandsagents.com](https://strandsagents.com/latest/)
 
 | What You Want Your Agent to Do | Without StrandKit | With StrandKit |
 |--------------------------------|-------------------|----------------|
-| "Find overpermissive IAM roles" | Write 150+ lines of boto3 code to scan roles, parse policies, assess risks | `find_overpermissive_roles()` - 1 function call |
-| "Analyze my AWS costs" | Write code to query Cost Explorer, aggregate by service, detect anomalies | `get_cost_by_service()` + `detect_cost_anomalies()` |
-| "Debug Lambda errors" | Write code to fetch CloudWatch logs, parse metrics, correlate events | `get_lambda_logs()` + `get_metric()` |
-| "Find wasted spend" | Write code to scan EC2, EBS, S3, snapshots, calculate costs | `find_zombie_resources()` |
+| "Audit my AWS security" | Write 500+ lines to scan IAM, S3, EC2, assess risks, prioritize findings | `audit_security()` - 1 orchestrator tool |
+| "Find all cost savings" | Write code to check zombies, idle resources, snapshots, buckets | `optimize_costs()` - 1 orchestrator tool |
+| "Debug Lambda errors" | Write code to fetch CloudWatch logs, parse metrics, correlate events | `diagnose_issue(resource_type="lambda")` |
+| "Get AWS account overview" | Write code to aggregate costs, security, resources across services | `get_aws_overview()` - 1 orchestrator tool |
+| "Find overpermissive IAM roles" (detailed) | Write 150+ lines of boto3 code to scan roles, parse policies | `find_overpermissive_roles()` - 1 granular tool |
 
 ### Drop-In Ready for Strands Agents
 
 ```python
 from strands import Agent
-from strandkit.strands import get_all_tools
+from strandkit.strands import get_tools_by_category
 
-# Create a Strands agent with all 60 StrandKit AWS tools
+# Create a Strands agent with 4 orchestrator tools (recommended)
 agent = Agent(
-    name="aws-security-auditor",
-    tools=get_all_tools(),  # All tools ready to use
+    name="aws-assistant",
+    tools=get_tools_by_category('orchestrators'),
     model="anthropic.claude-3-5-sonnet"
 )
 
-# Agent can now analyze your entire AWS account
-response = agent("Audit my AWS account for security risks and cost waste")
-# Agent automatically uses: find_overpermissive_roles(), find_overpermissive_security_groups(),
-#                          find_zombie_resources(), analyze_idle_resources(), etc.
+# Agent can now handle complex AWS tasks with simple tools
+response = agent("Audit my AWS account for security risks")
+# Agent calls audit_security() which internally uses 5+ security tools
+
+response = agent("Find ways to reduce my AWS bill")
+# Agent calls optimize_costs() which checks waste, idle resources, storage
 ```
 
 ### Built For Strands
 
+- ✅ **Orchestrator tools** - 4 high-level tools designed for common agent tasks
 - ✅ **@tool decorator** - Every function has Strands `@tool` decorator for instant integration
 - ✅ **Auto-schemas** - Tool schemas automatically generated for Strands agents
-- ✅ **Category filtering** - Load only the tools you need (IAM, Cost, EC2, S3, etc.)
-- ✅ **Production-ready** - All 60 tools tested with real AWS accounts
+- ✅ **Category filtering** - Load only the tools you need (orchestrators, IAM, Cost, EC2, S3, RDS, VPC, etc.)
+- ✅ **Production-ready** - All 72 tools tested with real AWS accounts
 - ✅ **Actionable output** - Every tool returns recommendations, not just raw data
 - ✅ **Standalone compatible** - Also works without Strands for scripting
 
@@ -99,16 +104,53 @@ response = agent("Audit my AWS account for security risks and cost waste")
 
 ### 1. With AWS Strands Agents (Recommended)
 
-Use StrandKit's 60 tools with the official AWS Strands framework:
+**NEW:** For best results, use **Orchestrator Tools** - high-level tools that solve complete tasks:
+
+```python
+from strands import Agent
+from strandkit.strands import get_tools_by_category
+
+# Create agent with 4 task-focused orchestrator tools (recommended)
+agent = Agent(
+    name="aws-assistant",
+    tools=get_tools_by_category('orchestrators'),
+    model="anthropic.claude-3-5-haiku"
+)
+
+# Agent has 4 clear, powerful tools:
+response = agent("Audit my AWS security")
+# Calls audit_security() which orchestrates 5+ security tools
+
+response = agent("Find cost savings")
+# Calls optimize_costs() which checks waste, idle resources, storage
+```
+
+**Why Orchestrator Tools?**
+- ✅ **Clear purpose** - 4 tools vs 60 reduces agent confusion
+- ✅ **Better results** - Designed for what agents actually need to do
+- ✅ **Comprehensive** - Each orchestrator uses multiple granular tools
+- ✅ **Scales to 100+ tools** - As we add more tools, orchestrators hide complexity
+
+**The 4 Orchestrator Tools:**
+1. `audit_security()` - Comprehensive security audit (IAM, S3, EC2)
+2. `optimize_costs()` - Find all cost savings opportunities
+3. `diagnose_issue()` - Smart troubleshooting for Lambda, EC2, S3
+4. `get_aws_overview()` - Dashboard view of entire AWS account
+
+---
+
+**Using all 68 granular tools (advanced):**
+
+Use StrandKit's 68 granular tools when you need fine-grained control:
 
 ```python
 from strands import Agent
 from strandkit.strands import get_all_tools
 
-# Create a Strands agent with all StrandKit tools
+# Create agent with all granular tools
 agent = Agent(
     name="aws-analyst",
-    tools=get_all_tools(),  # 60 AWS tools ready to use
+    tools=get_all_tools(),  # 68 AWS granular tools ready to use
     model="anthropic.claude-3-5-haiku"
 )
 
@@ -154,6 +196,33 @@ cost_agent = Agent(
 
 Use StrandKit tools directly without any agent framework:
 
+**Orchestrator tools (recommended):**
+```python
+from strandkit import (
+    audit_security,
+    optimize_costs,
+    diagnose_issue,
+    get_aws_overview
+)
+
+# Complete security audit
+security_report = audit_security(
+    include_iam=True,
+    include_s3=True,
+    include_ec2=True
+)
+print(f"Found {security_report['summary']['total_issues']} issues")
+
+# Find all cost savings
+savings = optimize_costs(min_impact=10.0)
+print(f"Potential savings: ${savings['summary']['total_monthly_savings']:.2f}/month")
+
+# Get account overview
+overview = get_aws_overview()
+print(f"Monthly spend: ${overview['costs']['total_monthly_spend']:.2f}")
+```
+
+**Granular tools (advanced):**
 ```python
 from strandkit import (
     find_overpermissive_roles,
@@ -318,6 +387,24 @@ result = agent.run("Why is my Lambda function failing?")
 | **`analyze_s3_replication`** | Replication configuration and costs | ✅ Working |
 | **`analyze_s3_request_costs`** | Request-based cost analysis | ✅ Working |
 | **`analyze_large_s3_objects`** | Find large objects needing optimization | ✅ Working |
+
+#### RDS & Database Tools (NEW in v2.2.0)
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`analyze_rds_instance`** | RDS performance, cost, and configuration analysis | ✅ Working |
+| **`find_idle_databases`** | Find underutilized RDS instances wasting money | ✅ Working |
+| **`analyze_rds_backups`** | Backup configuration and compliance analysis | ✅ Working |
+| **`get_rds_recommendations`** | RDS optimization recommendations (rightsizing, RI) | ✅ Working |
+| **`find_rds_security_issues`** | Scan all RDS instances for security issues | ✅ Working |
+
+#### VPC & Networking Tools (NEW in v2.2.0)
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`find_unused_nat_gateways`** | Find NAT Gateways with no traffic ($32/month each) | ✅ Working |
+| **`analyze_vpc_configuration`** | VPC configuration analysis (subnets, routes, flow logs) | ✅ Working |
+| **`analyze_data_transfer_costs`** | Data transfer cost breakdown (10-30% of bill) | ✅ Working |
+| **`analyze_vpc_endpoints`** | VPC endpoint analysis and cost savings | ✅ Working |
+| **`find_network_bottlenecks`** | Identify network performance bottlenecks | ✅ Working |
 
 ### Strands AI Agents (Powered by Claude)
 
@@ -684,6 +771,82 @@ for opp in transfer['optimization_opportunities']:
     print(f"  • {opp}")
 ```
 
+#### RDS Database Analysis (NEW)
+```python
+from strandkit import analyze_rds_instance, find_idle_databases, find_rds_security_issues
+
+# Analyze specific RDS instance
+instance = analyze_rds_instance("prod-database")
+print(f"Instance: {instance['instance_id']}")
+print(f"Engine: {instance['engine']} {instance['engine_version']}")
+print(f"Class: {instance['instance_class']}")
+print(f"Monthly Cost: ${instance['cost_estimate']['total_monthly_cost']:.2f}")
+print(f"Avg CPU: {instance['performance_metrics']['cpu_utilization']['average']:.1f}%")
+
+# Find underutilized databases
+idle = find_idle_databases(cpu_threshold=10.0, lookback_days=7)
+print(f"\nIdle Databases: {idle['summary']['total_idle_databases']}")
+print(f"Potential Savings: ${idle['summary']['potential_monthly_savings']:.2f}/month")
+
+for db in idle['idle_databases']:
+    print(f"\n{db['instance_id']} ({db['instance_class']})")
+    print(f"  Avg CPU: {db['metrics']['avg_cpu']:.2f}%")
+    print(f"  Monthly cost: ${db['monthly_cost']:.2f}")
+    print(f"  Recommendation: {db['recommendation']}")
+
+# Security audit
+security = find_rds_security_issues()
+print(f"\nSecurity Score: {security['summary']['security_score']}/100")
+print(f"Total Findings: {security['summary']['total_findings']}")
+print(f"Critical: {security['summary']['critical']}")
+
+for finding in security['findings']:
+    if finding['severity'] == 'critical':
+        print(f"\n🔴 {finding['title']}")
+        print(f"  Instance: {finding['instance_id']}")
+        print(f"  Issue: {finding['description']}")
+```
+
+#### VPC & Networking Analysis (NEW)
+```python
+from strandkit import (
+    find_unused_nat_gateways,
+    analyze_vpc_configuration,
+    analyze_vpc_endpoints
+)
+
+# Find wasted NAT Gateway spend
+nat = find_unused_nat_gateways()
+print(f"Unused NAT Gateways: {nat['summary']['total_unused']}")
+print(f"Monthly Waste: ${nat['summary']['monthly_waste']:.2f}")
+
+for gateway in nat['unused_nat_gateways']:
+    print(f"\n{gateway['nat_gateway_id']}")
+    print(f"  VPC: {gateway['vpc_id']}")
+    print(f"  Bytes transferred: {gateway['bytes_transferred']}")
+    print(f"  Monthly cost: ${gateway['monthly_cost']:.2f}")
+    print(f"  Recommendation: DELETE (no traffic in 7 days)")
+
+# Analyze VPC configuration
+vpc = analyze_vpc_configuration()
+print(f"\nTotal VPCs: {vpc['summary']['total_vpcs']}")
+print(f"Public Subnets: {vpc['summary']['public_subnets']}")
+print(f"Private Subnets: {vpc['summary']['private_subnets']}")
+print(f"NAT Gateways: {vpc['summary']['nat_gateways']}")
+
+# Check VPC endpoints for savings
+endpoints = analyze_vpc_endpoints()
+print(f"\nVPC Endpoints: {endpoints['summary']['total_endpoints']}")
+print(f"Gateway Endpoints: {endpoints['summary']['gateway_endpoints']}")
+print(f"Interface Endpoints: {endpoints['summary']['interface_endpoints']}")
+
+if endpoints['missing_gateway_endpoints']:
+    print("\nMissing Gateway Endpoints (FREE):")
+    for missing in endpoints['missing_gateway_endpoints']:
+        print(f"  • {missing['service']} - {missing['benefit']}")
+        print(f"    Potential savings: ${missing['estimated_monthly_savings']:.2f}/month")
+```
+
 #### Full Cost Optimization Scan
 ```python
 from strandkit import find_cost_optimization_opportunities
@@ -848,8 +1011,10 @@ strandkit/
 - **S3 & Storage tools** - Bucket security, public access detection, cost optimization (5 tools)
 - **EBS & Volume Optimization tools** - GP2→GP3 migration, IOPS, snapshots, encryption (6 tools)
 - **S3 Advanced Optimization tools** - Storage classes, lifecycle, versioning, replication (7 tools)
+- **RDS & Database tools** - Instance analysis, idle detection, backups, security (5 tools)
+- **VPC & Networking tools** - NAT Gateways, VPC config, data transfer, endpoints (5 tools)
 - Comprehensive documentation and examples
-- **56 production-ready tools** tested with real AWS accounts
+- **72 production-ready tools** tested with real AWS accounts
 
 🚧 **In Progress:**
 - Agent framework (pending AWS Strands integration)
@@ -857,8 +1022,8 @@ strandkit/
 - CLI interface
 
 📋 **Planned:**
-- S3 bucket analysis tools
-- RDS database monitoring tools
+- Lambda advanced tools
+- DynamoDB tools
 - Additional agent templates
 - PyPI package publication
 - MCP server integration

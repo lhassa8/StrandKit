@@ -1,6 +1,6 @@
 # StrandKit Tools Reference
 
-Complete API reference for all **60 AWS tools** in StrandKit v2.0.0.
+Complete API reference for all **72 AWS tools** in StrandKit v2.2.0.
 
 All tools are decorated with `@tool` for AWS Strands Agents integration and can also be used standalone.
 
@@ -8,6 +8,10 @@ All tools are decorated with `@tool` for AWS Strands Agents integration and can 
 
 ## Table of Contents
 
+### Recommended for Agents
+- [**Orchestrators (4 tools)**](#orchestrator-tools) - High-level tools for common agent tasks
+
+### Granular Tools (68 tools)
 - [CloudWatch (4 tools)](#cloudwatch-tools)
 - [CloudFormation (1 tool)](#cloudformation-tools)
 - [IAM (3 tools)](#iam-tools)
@@ -20,6 +24,263 @@ All tools are decorated with `@tool` for AWS Strands Agents integration and can 
 - [S3 (5 tools)](#s3-tools)
 - [S3 Advanced (7 tools)](#s3-advanced-tools)
 - [EBS (6 tools)](#ebs-tools)
+- [RDS (5 tools)](#rds-tools) - NEW in v2.2.0
+- [VPC (5 tools)](#vpc-tools) - NEW in v2.2.0
+
+---
+
+## Orchestrator Tools
+
+**High-level composite tools designed for common agent tasks.** Each orchestrator internally uses multiple granular tools to accomplish complex objectives.
+
+**Recommended for**: AI agents using Strands - these provide clear, task-focused capabilities.
+
+### audit_security()
+
+Comprehensive AWS security audit across IAM, S3, and EC2.
+
+```python
+from strandkit import audit_security
+
+# Complete security audit
+report = audit_security(
+    include_iam=True,      # Check IAM roles, MFA, privilege escalation
+    include_s3=True,       # Check public S3 buckets
+    include_ec2=True       # Check security groups
+)
+
+# Returns structured findings
+print(f"Total issues: {report['summary']['total_issues']}")
+print(f"Critical: {report['summary']['critical']}")
+print(f"High: {report['summary']['high']}")
+
+# Top recommendations sorted by severity
+for rec in report['top_recommendations']:
+    print(f"[{rec['severity']}] {rec['title']}")
+```
+
+**Internally Orchestrates:**
+- `find_overpermissive_roles()` - Scan all IAM roles
+- `analyze_mfa_compliance()` - Check MFA status
+- `detect_privilege_escalation_paths()` - Find security risks
+- `find_public_buckets()` - Check S3 public access
+- `find_overpermissive_security_groups()` - Check network security
+
+**Returns:**
+```json
+{
+  "summary": {
+    "total_issues": 14,
+    "critical": 2,
+    "high": 5,
+    "medium": 7,
+    "low": 0
+  },
+  "iam_findings": [...],
+  "s3_findings": [...],
+  "ec2_findings": [...],
+  "top_recommendations": [
+    {
+      "severity": "high",
+      "category": "iam",
+      "title": "12 overpermissive IAM roles found",
+      "action": "Review and restrict role permissions"
+    }
+  ]
+}
+```
+
+---
+
+### optimize_costs()
+
+Find all AWS cost optimization opportunities across services.
+
+```python
+from strandkit import optimize_costs
+
+# Find all cost savings opportunities
+savings = optimize_costs(
+    include_waste=True,      # Zombie resources, unused resources
+    include_idle=True,       # Underutilized resources
+    include_storage=True,    # Old snapshots, empty buckets
+    min_impact=10.0          # Only show opportunities >= $10/month
+)
+
+# Returns prioritized opportunities
+print(f"Total monthly savings: ${savings['summary']['total_monthly_savings']:.2f}")
+print(f"Total annual savings: ${savings['summary']['total_annual_savings']:.2f}")
+
+# Top opportunities sorted by savings
+for opp in savings['top_opportunities']:
+    print(f"${opp['monthly_savings']:.2f}/mo - {opp['title']}")
+    print(f"  Effort: {opp['effort']}, Risk: {opp['risk']}")
+```
+
+**Internally Orchestrates:**
+- `find_zombie_resources()` - Forgotten resources
+- `analyze_idle_resources()` - Low CPU instances
+- `analyze_snapshot_waste()` - Old EBS snapshots
+- `find_unused_buckets()` - Empty S3 buckets
+- `find_unused_resources()` - Stopped EC2 instances
+
+**Returns:**
+```json
+{
+  "summary": {
+    "total_opportunities": 5,
+    "total_monthly_savings": 234.50,
+    "total_annual_savings": 2814.00
+  },
+  "top_opportunities": [
+    {
+      "category": "Zombie Resources",
+      "title": "Delete forgotten resources",
+      "monthly_savings": 150.00,
+      "annual_savings": 1800.00,
+      "effort": "low",
+      "risk": "low",
+      "action": "Delete 3 zombie resources",
+      "details": [...]
+    }
+  ]
+}
+```
+
+---
+
+### diagnose_issue()
+
+Smart diagnostic tool that routes to appropriate tools based on resource type.
+
+```python
+from strandkit import diagnose_issue
+
+# Diagnose Lambda function issues
+diagnosis = diagnose_issue(
+    resource_type="lambda",              # lambda, ec2, s3
+    resource_name="my-api-function",
+    issue_description="High error rate"  # Optional context
+)
+
+print(f"Diagnosis: {diagnosis['diagnosis']['summary']}")
+for rec in diagnosis['recommendations']:
+    print(f"- {rec}")
+```
+
+**Smart Routing by Resource Type:**
+- `resource_type="lambda"` → Uses `get_metric()` + `get_lambda_logs()`
+- `resource_type="ec2"` → Uses `analyze_ec2_instance()` + `analyze_ec2_performance()`
+- `resource_type="s3"` → Uses `analyze_s3_bucket()` + `analyze_bucket_access()`
+
+**Returns:**
+```json
+{
+  "resource_type": "lambda",
+  "resource_name": "my-api-function",
+  "diagnosis": {
+    "errors_found": true,
+    "error_rate": 15.3,
+    "recent_errors": [...],
+    "summary": "Function has elevated error rate (15.3%)"
+  },
+  "recommendations": [
+    "Error rate is elevated - investigate recent deployments",
+    "Check CloudWatch logs for patterns",
+    "Review function timeout and memory settings"
+  ]
+}
+```
+
+---
+
+### get_aws_overview()
+
+Get high-level dashboard view of entire AWS account.
+
+```python
+from strandkit import get_aws_overview
+
+# Get account overview
+overview = get_aws_overview(
+    include_costs=True,      # Monthly spending
+    include_security=True,   # Security posture
+    include_resources=True   # Resource inventory
+)
+
+# Dashboard summary
+print(f"Monthly spend: ${overview['costs']['total_monthly_spend']:.2f}")
+print(f"Top service: {overview['costs']['top_service']}")
+print(f"Security issues: {overview['security']['total_issues']}")
+print(f"EC2 instances: {overview['resources']['ec2_instances']}")
+print(f"S3 buckets: {overview['resources']['s3_buckets']}")
+```
+
+**Internally Orchestrates:**
+- `get_cost_by_service()` - Monthly spending breakdown
+- `find_overpermissive_roles()` - Security summary
+- `find_public_buckets()` - S3 security status
+- `get_ec2_inventory()` - Compute resources
+
+**Returns:**
+```json
+{
+  "account_summary": {
+    "region": "us-east-1",
+    "last_updated": "2025-11-17T10:30:00Z"
+  },
+  "costs": {
+    "total_monthly_spend": 150.38,
+    "top_service": "Amazon RDS ($131.90)",
+    "services": [...]
+  },
+  "security": {
+    "overpermissive_roles": 12,
+    "public_buckets": 2,
+    "total_issues": 14
+  },
+  "resources": {
+    "ec2_instances": 3,
+    "s3_buckets": 10,
+    "lambda_functions": 15
+  }
+}
+```
+
+---
+
+## When to Use Orchestrators vs Granular Tools
+
+| Use Case | Recommended Tools |
+|----------|-------------------|
+| **AI Agents (general purpose)** | Use orchestrators only - clearer for agents |
+| **AI Agents (specialized)** | Mix orchestrators + specific granular categories |
+| **Scripting/Automation** | Use granular tools for precise control |
+| **Exploratory analysis** | Start with orchestrators, drill down with granular |
+
+**Example - General Purpose Agent:**
+```python
+from strands import Agent
+from strandkit.strands import get_tools_by_category
+
+# Agent with just 4 orchestrator tools (recommended)
+agent = Agent(
+    tools=get_tools_by_category('orchestrators'),
+    model="anthropic.claude-3-5-haiku"
+)
+```
+
+**Example - Specialized Security Agent:**
+```python
+# Security agent with orchestrators + detailed IAM tools
+agent = Agent(
+    tools=(
+        get_tools_by_category('orchestrators') +
+        get_tools_by_category('iam_security')
+    ),
+    model="anthropic.claude-3-5-sonnet"
+)
+```
 
 ---
 
@@ -821,6 +1082,223 @@ amis = analyze_ami_usage(age_threshold_days=180)
 
 ---
 
+## RDS Tools
+
+**NEW in v2.2.0** - Database analysis and optimization tools.
+
+### analyze_rds_instance()
+
+Comprehensive RDS instance analysis including performance, cost, and configuration.
+
+```python
+from strandkit import analyze_rds_instance
+
+instance = analyze_rds_instance("my-database")
+```
+
+**Parameters:**
+- `db_instance_identifier` (str): RDS instance ID
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Instance configuration, CloudWatch metrics (CPU, connections, IOPS), cost estimate, security settings, backup configuration, optimization recommendations.
+
+### find_idle_databases()
+
+Find underutilized RDS instances that are wasting money.
+
+```python
+from strandkit import find_idle_databases
+
+idle = find_idle_databases(
+    cpu_threshold=10.0,  # CPU % threshold
+    lookback_days=7      # Analysis period
+)
+```
+
+**Parameters:**
+- `cpu_threshold` (float): CPU utilization threshold (default: 10.0%)
+- `lookback_days` (int): Days to analyze (default: 7)
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Idle databases with metrics, monthly costs, potential savings from downsizing.
+
+### analyze_rds_backups()
+
+Analyze RDS backup configuration and costs across all databases.
+
+```python
+from strandkit import analyze_rds_backups
+
+backups = analyze_rds_backups()
+```
+
+**Parameters:**
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Backup status per instance, manual snapshots, compliance score (7+ days retention), cleanup opportunities.
+
+### get_rds_recommendations()
+
+Get RDS optimization recommendations from AWS and cost analysis.
+
+```python
+from strandkit import get_rds_recommendations
+
+recommendations = get_rds_recommendations()
+```
+
+**Parameters:**
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Categorized recommendations (rightsizing, storage, reliability), potential savings, priority levels.
+
+### find_rds_security_issues()
+
+Scan all RDS instances for security misconfigurations and compliance issues.
+
+```python
+from strandkit import find_rds_security_issues
+
+security = find_rds_security_issues()
+```
+
+**Parameters:**
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Security findings by severity (critical/high/medium/low), security score (0-100), remediation commands.
+
+**Checks for:**
+- Publicly accessible databases
+- Unencrypted storage
+- Missing deletion protection
+- Weak backup retention
+- Missing security patches
+- IAM authentication disabled
+
+---
+
+## VPC Tools
+
+**NEW in v2.2.0** - VPC and networking analysis tools.
+
+### find_unused_nat_gateways()
+
+Find NAT Gateways with no traffic that are wasting $32/month each.
+
+```python
+from strandkit import find_unused_nat_gateways
+
+nat = find_unused_nat_gateways()
+```
+
+**Parameters:**
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Unused NAT Gateways (zero traffic), low-usage NAT Gateways (<1GB/day), monthly waste calculation.
+
+**Cost Context:** NAT Gateways cost $0.045/hour ($32.40/month) plus $0.045/GB data processing.
+
+### analyze_vpc_configuration()
+
+Analyze VPC configuration including subnets, route tables, and networking.
+
+```python
+from strandkit import analyze_vpc_configuration
+
+# Analyze all VPCs
+vpc = analyze_vpc_configuration()
+
+# Analyze specific VPC
+vpc = analyze_vpc_configuration(vpc_id="vpc-12345")
+```
+
+**Parameters:**
+- `vpc_id` (Optional[str]): Specific VPC to analyze (default: all VPCs)
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** VPC details, subnet breakdown (public/private), route tables, IGW/NAT counts, flow logs status, recommendations.
+
+**Analyzes:**
+- VPC CIDR blocks and IP address usage
+- Subnet configuration and availability
+- Route table configuration
+- Internet Gateway and NAT Gateway setup
+- VPC peering connections
+- Network ACLs
+- VPC Flow Logs status
+
+### analyze_data_transfer_costs()
+
+Analyze AWS data transfer costs which can be 10-30% of total bill.
+
+```python
+from strandkit import analyze_data_transfer_costs
+
+transfer = analyze_data_transfer_costs(days_back=30)
+```
+
+**Parameters:**
+- `days_back` (int): Days to analyze (default: 30)
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Transfer cost breakdown by service, percentage of total bill, optimization recommendations.
+
+**Breaks down costs by:**
+- Inter-region transfers
+- Internet egress (data out to internet)
+- Inter-AZ transfers
+- CloudFront distributions
+- NAT Gateway data processing
+
+### analyze_vpc_endpoints()
+
+Analyze VPC endpoint usage and identify cost savings opportunities.
+
+```python
+from strandkit import analyze_vpc_endpoints
+
+# All VPCs
+endpoints = analyze_vpc_endpoints()
+
+# Specific VPC
+endpoints = analyze_vpc_endpoints(vpc_id="vpc-12345")
+```
+
+**Parameters:**
+- `vpc_id` (Optional[str]): Specific VPC to analyze (default: all VPCs)
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Existing endpoints (gateway/interface), missing gateway endpoints (S3, DynamoDB - FREE), potential savings from avoiding NAT charges.
+
+**Cost Context:**
+- Gateway endpoints: FREE for S3 and DynamoDB
+- Interface endpoints: $0.01/hour per AZ ($14.60/month for 2-AZ)
+
+### find_network_bottlenecks()
+
+Identify network performance issues and bottlenecks.
+
+```python
+from strandkit import find_network_bottlenecks
+
+issues = find_network_bottlenecks(lookback_days=7)
+```
+
+**Parameters:**
+- `lookback_days` (int): Days to analyze (default: 7)
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Network bottlenecks by severity, NAT Gateway packet drops, VPN tunnel status, high network utilization instances.
+
+**Analyzes:**
+- NAT Gateway throughput and packet drops
+- Network interface performance
+- VPN connection health
+- Network ACL denials
+- High network utilization instances
+
+---
+
 ## Usage Patterns
 
 ### With Strands Agents
@@ -871,6 +1349,7 @@ costs = get_cost_by_service(days_back=30, aws_client=aws)
 
 | Category | Count | Purpose |
 |----------|-------|---------|
+| `orchestrators` | 4 | High-level composite tools |
 | `cloudwatch` | 4 | CloudWatch Logs and Metrics |
 | `cloudformation` | 1 | CloudFormation changesets |
 | `iam` | 3 | IAM role and policy analysis |
@@ -883,6 +1362,8 @@ costs = get_cost_by_service(days_back=30, aws_client=aws)
 | `s3` | 5 | S3 bucket analysis |
 | `s3_advanced` | 7 | S3 optimization |
 | `ebs` | 6 | EBS volume optimization |
+| `rds` | 5 | RDS database analysis (NEW v2.2.0) |
+| `vpc` | 5 | VPC networking analysis (NEW v2.2.0) |
 
 ---
 
@@ -932,4 +1413,4 @@ See the [examples](examples/) directory:
 
 ---
 
-**StrandKit v2.0.0** - 60 AWS tools for building AI agents
+**StrandKit v2.2.0** - 72 AWS tools for building AI agents
