@@ -17,7 +17,7 @@ Example usage:
 For more information, see: https://github.com/yourusername/strandkit
 """
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"
 __author__ = "Your Name"
 
 # Import main agent templates for easy access
@@ -100,6 +100,14 @@ from strandkit.tools.vpc import (
     analyze_data_transfer_costs,
     analyze_vpc_endpoints,
     find_network_bottlenecks
+)
+from strandkit.tools.bedrock import (
+    analyze_bedrock_usage,
+    list_available_models,
+    get_model_details,
+    analyze_model_performance,
+    compare_models,
+    get_model_invocation_logs
 )
 
 __all__ = [
@@ -192,6 +200,13 @@ __all__ = [
     "analyze_data_transfer_costs",
     "analyze_vpc_endpoints",
     "find_network_bottlenecks",
+    # Bedrock/AI tools
+    "analyze_bedrock_usage",
+    "list_available_models",
+    "get_model_details",
+    "analyze_model_performance",
+    "compare_models",
+    "get_model_invocation_logs",
 ]
 from strandkit.tools.s3_advanced import (
     analyze_s3_storage_classes,

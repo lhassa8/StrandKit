@@ -22,16 +22,17 @@
 
 ## Overview
 
-StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.com/)** that provides **72 production-ready AWS tools** for:
+StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.com/)** that provides **78 production-ready AWS tools** for:
 
 - 💰 **Cost optimization** - Find waste, analyze spending, get rightsizing recommendations
 - 🔒 **Security auditing** - Scan IAM policies, detect misconfigurations, enforce compliance
 - 📊 **Infrastructure monitoring** - Analyze CloudWatch metrics, track performance, debug issues
 - ⚡ **Performance tuning** - Identify bottlenecks, optimize auto-scaling, analyze load balancers
+- 🤖 **AI/ML operations** - Bedrock model analysis, usage monitoring, cost optimization
 
 **Perfect for AWS Strands Agents:**
 - **Orchestrator tools** - 4 high-level tools designed for common agent tasks (security audit, cost optimization, diagnostics)
-- **Drop-in ready** - All 72 tools work seamlessly with Strands agents via `get_all_tools()`
+- **Drop-in ready** - All 78 tools work seamlessly with Strands agents via `get_all_tools()`
 - **Auto-generated schemas** - Tool definitions automatically converted to Strands-compatible format
 - **Category organization** - Filter by orchestrators, IAM, EC2, S3, Cost, CloudWatch for specialized agents
 - **Production-tested** - All tools validated with real AWS accounts, handles edge cases gracefully
@@ -53,7 +54,7 @@ Learn more: [strandsagents.com](https://strandsagents.com/latest/)
 
 ## Why StrandKit?
 
-**StrandKit supercharges AWS Strands Agents with 72 production-ready AWS tools** (4 orchestrators + 68 granular).
+**StrandKit supercharges AWS Strands Agents with 78 production-ready AWS tools** (4 orchestrators + 74 granular).
 
 ### Strands Gives You the Framework, StrandKit Gives You the Tools
 
@@ -95,8 +96,8 @@ response = agent("Find ways to reduce my AWS bill")
 - ✅ **Orchestrator tools** - 4 high-level tools designed for common agent tasks
 - ✅ **@tool decorator** - Every function has Strands `@tool` decorator for instant integration
 - ✅ **Auto-schemas** - Tool schemas automatically generated for Strands agents
-- ✅ **Category filtering** - Load only the tools you need (orchestrators, IAM, Cost, EC2, S3, RDS, VPC, etc.)
-- ✅ **Production-ready** - All 72 tools tested with real AWS accounts
+- ✅ **Category filtering** - Load only the tools you need (orchestrators, IAM, Cost, EC2, S3, RDS, VPC, Bedrock, etc.)
+- ✅ **Production-ready** - All 78 tools tested with real AWS accounts
 - ✅ **Actionable output** - Every tool returns recommendations, not just raw data
 - ✅ **Standalone compatible** - Also works without Strands for scripting
 
@@ -139,9 +140,9 @@ response = agent("Find cost savings")
 
 ---
 
-**Using all 68 granular tools (advanced):**
+**Using all 74 granular tools (advanced):**
 
-Use StrandKit's 68 granular tools when you need fine-grained control:
+Use StrandKit's 74 granular tools when you need fine-grained control:
 
 ```python
 from strands import Agent
@@ -150,7 +151,7 @@ from strandkit.strands import get_all_tools
 # Create agent with all granular tools
 agent = Agent(
     name="aws-analyst",
-    tools=get_all_tools(),  # 68 AWS granular tools ready to use
+    tools=get_all_tools(),  # 74 AWS granular tools ready to use
     model="anthropic.claude-3-5-haiku"
 )
 
@@ -405,6 +406,16 @@ result = agent.run("Why is my Lambda function failing?")
 | **`analyze_data_transfer_costs`** | Data transfer cost breakdown (10-30% of bill) | ✅ Working |
 | **`analyze_vpc_endpoints`** | VPC endpoint analysis and cost savings | ✅ Working |
 | **`find_network_bottlenecks`** | Identify network performance bottlenecks | ✅ Working |
+
+#### Bedrock & AI/ML Tools (NEW in v2.3.0)
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`analyze_bedrock_usage`** | Bedrock usage, costs, and model invocation metrics | ✅ Working |
+| **`list_available_models`** | List all available foundation models (Claude, Llama, Titan, etc.) | ✅ Working |
+| **`get_model_details`** | Get model details (pricing, context limits, capabilities) | ✅ Working |
+| **`analyze_model_performance`** | Performance metrics (latency, errors, throttling) | ✅ Working |
+| **`compare_models`** | Compare models side-by-side for selection | ✅ Working |
+| **`get_model_invocation_logs`** | Recent model invocations for debugging | ✅ Working |
 
 ### Strands AI Agents (Powered by Claude)
 
@@ -847,6 +858,67 @@ if endpoints['missing_gateway_endpoints']:
         print(f"    Potential savings: ${missing['estimated_monthly_savings']:.2f}/month")
 ```
 
+#### Bedrock AI/ML Model Analysis (NEW)
+```python
+from strandkit import (
+    analyze_bedrock_usage,
+    list_available_models,
+    compare_models,
+    get_model_details
+)
+
+# Analyze Bedrock usage and costs
+usage = analyze_bedrock_usage(days_back=30)
+print(f"Total Invocations: {usage['summary']['total_invocations']:,}")
+print(f"Total Cost: ${usage['summary']['total_cost']:.2f}")
+print(f"Cost Source: {usage['summary']['cost_source']}")
+
+# Show usage by model
+for model in usage['by_model']:
+    print(f"\n{model['model_pattern']}")
+    print(f"  Invocations: {model['invocations']:,}")
+    print(f"  Avg daily: {model['avg_daily_invocations']}")
+    print(f"  Estimated cost: ${model['estimated_cost']:.2f}")
+
+# List available models
+models = list_available_models()
+print(f"\nAvailable Models: {models['summary']['total_models']}")
+print(f"Providers: {', '.join(models['summary']['providers'])}")
+
+# Show models by provider
+for provider, model_ids in models['by_provider'].items():
+    print(f"\n{provider}: {len(model_ids)} models")
+    for model_id in model_ids[:3]:  # First 3
+        print(f"  - {model_id}")
+
+# Compare Claude models
+claude_models = [m['model_id'] for m in models['models'] if 'claude' in m['model_id'].lower()]
+if len(claude_models) >= 2:
+    comparison = compare_models(claude_models[:3])
+
+    print("\nModel Comparison:")
+    for model in comparison['comparison_table']:
+        print(f"\n{model['model_name']}")
+        print(f"  Input: ${model['input_price_per_1k']}/1K tokens")
+        print(f"  Output: ${model['output_price_per_1k']}/1K tokens")
+        print(f"  Context: {model['context_window']}")
+        print(f"  Use cases: {', '.join(model['primary_use_cases'])}")
+
+    # Show cost for typical workload
+    print("\nCost for Medium Usage (100K input, 50K output tokens):")
+    for model in comparison['cost_comparison']['Medium usage']:
+        print(f"  {model['model_name']}: ${model['total_cost']:.2f}")
+
+# Get detailed model info
+if claude_models:
+    details = get_model_details(claude_models[0])
+    print(f"\nModel Details: {details['model_info']['model_name']}")
+    print(f"Provider: {details['model_info']['provider']}")
+    print(f"Streaming: {details['capabilities']['response_streaming']}")
+    print(f"Context window: {details['limits']['context_window']}")
+    print(f"Recommended for: {', '.join(details['use_cases'])}")
+```
+
 #### Full Cost Optimization Scan
 ```python
 from strandkit import find_cost_optimization_opportunities
@@ -1013,8 +1085,9 @@ strandkit/
 - **S3 Advanced Optimization tools** - Storage classes, lifecycle, versioning, replication (7 tools)
 - **RDS & Database tools** - Instance analysis, idle detection, backups, security (5 tools)
 - **VPC & Networking tools** - NAT Gateways, VPC config, data transfer, endpoints (5 tools)
+- **Bedrock & AI/ML tools** - Model analysis, usage monitoring, cost optimization (6 tools)
 - Comprehensive documentation and examples
-- **72 production-ready tools** tested with real AWS accounts
+- **78 production-ready tools** tested with real AWS accounts
 
 🚧 **In Progress:**
 - Agent framework (pending AWS Strands integration)
@@ -1022,8 +1095,9 @@ strandkit/
 - CLI interface
 
 📋 **Planned:**
-- Lambda advanced tools
-- DynamoDB tools
+- Lambda advanced tools (monitoring, performance, cost analysis)
+- DynamoDB tools (table analysis, capacity optimization)
+- Knowledge base tools (Bedrock knowledge bases, RAG optimization)
 - Additional agent templates
 - PyPI package publication
 - MCP server integration

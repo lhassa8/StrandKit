@@ -20,7 +20,7 @@ from typing import List, Any
 
 def get_all_tools() -> List[Any]:
     """
-    Get all 72 StrandKit tools as @tool-decorated functions.
+    Get all 78 StrandKit tools as @tool-decorated functions.
 
     Returns list of functions ready to pass to Strands Agent.
 
@@ -34,7 +34,7 @@ def get_all_tools() -> List[Any]:
         )
 
     Returns:
-        List of 64 @tool-decorated functions organized by category:
+        List of 78 @tool-decorated functions organized by category:
         - Orchestrators: 4 tools (high-level)
         - CloudWatch: 4 tools
         - CloudFormation: 1 tool
@@ -48,6 +48,9 @@ def get_all_tools() -> List[Any]:
         - S3: 5 tools
         - S3 Advanced: 7 tools
         - EBS: 6 tools
+        - RDS: 5 tools
+        - VPC: 5 tools
+        - Bedrock: 6 tools
     """
     # Import all tool modules
     from strandkit.tools import (
@@ -59,6 +62,8 @@ def get_all_tools() -> List[Any]:
         ec2, ec2_advanced, s3, s3_advanced, ebs,
         # Database and networking
         rds, vpc,
+        # AI/ML
+        bedrock,
         # Orchestrator module
         orchestrators
     )
@@ -165,6 +170,14 @@ def get_all_tools() -> List[Any]:
         vpc.analyze_data_transfer_costs,
         vpc.analyze_vpc_endpoints,
         vpc.find_network_bottlenecks,
+
+        # Bedrock (6 tools)
+        bedrock.analyze_bedrock_usage,
+        bedrock.list_available_models,
+        bedrock.get_model_details,
+        bedrock.analyze_model_performance,
+        bedrock.compare_models,
+        bedrock.get_model_invocation_logs,
     ]
 
 
@@ -189,6 +202,7 @@ def get_tools_by_category(category: str) -> List[Any]:
             - 'ebs': EBS volume optimization (6 tools)
             - 'rds': RDS database analysis (5 tools)
             - 'vpc': VPC networking analysis (5 tools)
+            - 'bedrock': Bedrock AI/ML models (6 tools)
 
     Returns:
         List of @tool-decorated functions for the category
@@ -357,6 +371,17 @@ def get_tools_by_category(category: str) -> List[Any]:
             vpc.find_network_bottlenecks,
         ]
 
+    elif category == 'bedrock':
+        from strandkit.tools import bedrock
+        return [
+            bedrock.analyze_bedrock_usage,
+            bedrock.list_available_models,
+            bedrock.get_model_details,
+            bedrock.analyze_model_performance,
+            bedrock.compare_models,
+            bedrock.get_model_invocation_logs,
+        ]
+
     else:
         return []
 
@@ -390,4 +415,5 @@ def list_tool_categories() -> List[str]:
         'ebs',
         'rds',
         'vpc',
+        'bedrock',
     ]

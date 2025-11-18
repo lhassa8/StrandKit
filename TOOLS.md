@@ -1,6 +1,6 @@
 # StrandKit Tools Reference
 
-Complete API reference for all **72 AWS tools** in StrandKit v2.2.0.
+Complete API reference for all **78 AWS tools** in StrandKit v2.3.0.
 
 All tools are decorated with `@tool` for AWS Strands Agents integration and can also be used standalone.
 
@@ -11,7 +11,7 @@ All tools are decorated with `@tool` for AWS Strands Agents integration and can 
 ### Recommended for Agents
 - [**Orchestrators (4 tools)**](#orchestrator-tools) - High-level tools for common agent tasks
 
-### Granular Tools (68 tools)
+### Granular Tools (74 tools)
 - [CloudWatch (4 tools)](#cloudwatch-tools)
 - [CloudFormation (1 tool)](#cloudformation-tools)
 - [IAM (3 tools)](#iam-tools)
@@ -26,6 +26,7 @@ All tools are decorated with `@tool` for AWS Strands Agents integration and can 
 - [EBS (6 tools)](#ebs-tools)
 - [RDS (5 tools)](#rds-tools) - NEW in v2.2.0
 - [VPC (5 tools)](#vpc-tools) - NEW in v2.2.0
+- [Bedrock (6 tools)](#bedrock-tools) - NEW in v2.3.0
 
 ---
 
@@ -1299,6 +1300,179 @@ issues = find_network_bottlenecks(lookback_days=7)
 
 ---
 
+## Bedrock Tools
+
+**NEW in v2.3.0** - AWS Bedrock AI/ML model analysis and optimization tools.
+
+### analyze_bedrock_usage()
+
+Analyze AWS Bedrock usage, costs, and model invocation metrics.
+
+```python
+from strandkit import analyze_bedrock_usage
+
+# Analyze last 30 days
+usage = analyze_bedrock_usage(days_back=30)
+```
+
+**Parameters:**
+- `days_back` (int): Number of days to analyze (default: 30)
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Total invocations, costs by model, usage trends, cost optimization recommendations.
+
+**Provides:**
+- Model invocation counts and costs by model
+- Token usage (input/output tokens)
+- Cost breakdown by model family (Claude, Llama, Titan, etc.)
+- Usage trends over time
+- Cost optimization suggestions
+
+### list_available_models()
+
+List all available foundation models in AWS Bedrock.
+
+```python
+from strandkit import list_available_models
+
+# List all models
+models = list_available_models()
+
+# Filter by provider
+claude_models = list_available_models(provider_filter='Anthropic')
+```
+
+**Parameters:**
+- `provider_filter` (Optional[str]): Filter by provider (e.g., 'Anthropic', 'Amazon', 'Meta')
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Total models, models by provider, models by modality (text, image, embedding).
+
+**Model Providers:**
+- Anthropic (Claude 3 Opus, Sonnet, Haiku)
+- Amazon (Titan Text, Titan Embed, Titan Image)
+- Meta (Llama 2, Llama 3)
+- Cohere (Command, Embed)
+- AI21 Labs (Jurassic)
+- Stability AI (Stable Diffusion)
+
+### get_model_details()
+
+Get detailed information about a specific Bedrock foundation model.
+
+```python
+from strandkit import get_model_details
+
+details = get_model_details('anthropic.claude-3-sonnet-20240229-v1:0')
+```
+
+**Parameters:**
+- `model_id` (str): Model ID (e.g., 'anthropic.claude-3-sonnet-20240229-v1:0')
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Model info, capabilities, pricing estimates, context limits, recommended use cases.
+
+**Pricing Estimates (per 1K tokens):**
+- Claude 3 Opus: $0.015 input, $0.075 output
+- Claude 3 Sonnet: $0.003 input, $0.015 output
+- Claude 3 Haiku: $0.00025 input, $0.00125 output
+- Llama 3 70B: $0.00099 both
+- Titan Text: $0.0002 input, $0.0006 output
+
+### analyze_model_performance()
+
+Analyze performance metrics for Bedrock models.
+
+```python
+from strandkit import analyze_model_performance
+
+# All models
+perf = analyze_model_performance(days_back=7)
+
+# Specific model
+perf = analyze_model_performance(
+    model_id='anthropic.claude-3-sonnet-20240229-v1:0',
+    days_back=7
+)
+```
+
+**Parameters:**
+- `model_id` (Optional[str]): Specific model to analyze (optional)
+- `days_back` (int): Number of days to analyze (default: 7)
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Latency metrics (average, p99), error rates, throttling, performance recommendations.
+
+**Metrics Analyzed:**
+- Average latency (milliseconds)
+- Error rate (client + server errors)
+- Throttle rate
+- Invocations per hour
+
+### compare_models()
+
+Compare multiple Bedrock models side-by-side.
+
+```python
+from strandkit import compare_models
+
+comparison = compare_models([
+    'anthropic.claude-3-sonnet-20240229-v1:0',
+    'anthropic.claude-3-haiku-20240307-v1:0',
+    'meta.llama3-70b-instruct-v1:0'
+])
+```
+
+**Parameters:**
+- `model_ids` (List[str]): List of 2-5 model IDs to compare
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Side-by-side comparison table, cost comparison for typical workloads, recommendations.
+
+**Comparison Attributes:**
+- Input/output pricing per 1K tokens
+- Context window size
+- Max output tokens
+- Streaming support
+- Primary use cases
+- Cost for light/medium/heavy workloads
+
+### get_model_invocation_logs()
+
+Get recent model invocation logs for debugging and analysis.
+
+```python
+from strandkit import get_model_invocation_logs
+
+# Last 24 hours, 50 invocations
+logs = get_model_invocation_logs(hours_back=24, limit=50)
+
+# Specific model
+logs = get_model_invocation_logs(
+    model_id='anthropic.claude-3-sonnet-20240229-v1:0',
+    hours_back=24
+)
+```
+
+**Parameters:**
+- `model_id` (Optional[str]): Filter by specific model (optional)
+- `hours_back` (int): Hours of logs to retrieve (default: 24)
+- `limit` (int): Maximum log entries (default: 50, max: 100)
+- `aws_client` (Optional[AWSClient]): Custom AWS client
+
+**Returns:** Recent invocations with token usage, latency, errors.
+
+**Note:** Requires model invocation logging to be enabled in Bedrock settings.
+
+**Log Data Includes:**
+- Timestamp
+- Model ID
+- Input/output token counts
+- Latency (milliseconds)
+- Errors (if any)
+
+---
+
 ## Usage Patterns
 
 ### With Strands Agents
@@ -1364,6 +1538,7 @@ costs = get_cost_by_service(days_back=30, aws_client=aws)
 | `ebs` | 6 | EBS volume optimization |
 | `rds` | 5 | RDS database analysis (NEW v2.2.0) |
 | `vpc` | 5 | VPC networking analysis (NEW v2.2.0) |
+| `bedrock` | 6 | Bedrock AI/ML models (NEW v2.3.0) |
 
 ---
 
@@ -1413,4 +1588,4 @@ See the [examples](examples/) directory:
 
 ---
 
-**StrandKit v2.2.0** - 72 AWS tools for building AI agents
+**StrandKit v2.3.0** - 78 AWS tools for building AI agents
