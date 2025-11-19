@@ -50,8 +50,6 @@ StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.co
 - 🏢 **Enterprise features** - Memory, observability, guardrails, PII redaction
 - ☁️ **AWS-native** - Deploy to Lambda, EKS, Fargate; use Bedrock models
 
-Learn more: [strandsagents.com](https://strandsagents.com/latest/)
-
 ## Why StrandKit?
 
 **StrandKit supercharges AWS Strands Agents with 78 production-ready AWS tools** (4 orchestrators + 74 granular).
