@@ -4,25 +4,29 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "strandkit"
-version = "0.2.0"
-description = "Companion SDK for AWS Strands Agents"
+version = "2.3.0"
+description = "Companion SDK for AWS Strands Agents - 78 production-ready AWS tools for cost optimization, security auditing, and infrastructure monitoring"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "you@example.com"}
+    {name = "StrandKit Contributors", email = "noreply@github.com"}
 ]
 keywords = ["aws", "strands", "agents", "llm", "cloudwatch", "infrastructure"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Monitoring",
+    "Topic :: System :: Systems Administration",
 ]
 
 dependencies = [
@@ -31,6 +35,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+strands = [
+    "strands-agents>=0.1.0",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
@@ -40,10 +47,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/strandkit"
-Documentation = "https://strandkit.readthedocs.io"
-Repository = "https://github.com/yourusername/strandkit"
-"Bug Tracker" = "https://github.com/yourusername/strandkit/issues"
+Homepage = "https://github.com/lhassa8/StrandKit"
+Documentation = "https://github.com/lhassa8/StrandKit/blob/main/README.md"
+Repository = "https://github.com/lhassa8/StrandKit"
+"Bug Tracker" = "https://github.com/lhassa8/StrandKit/issues"
 
 [project.scripts]
 strandkit = "strandkit.cli.__main__:main"
