@@ -78,7 +78,7 @@ from strandkit.strands import get_tools_by_category
 agent = Agent(
     name="aws-assistant",
     tools=get_tools_by_category('orchestrators'),
-    model="anthropic.claude-3-5-sonnet"
+    model="claude-3-5-haiku-20241022"
 )
 
 # Agent can now handle complex AWS tasks with simple tools
@@ -180,7 +180,7 @@ security_agent = Agent(
     tools=(get_tools_by_category('iam') +
            get_tools_by_category('iam_security') +
            get_tools_by_category('ec2')),
-    model="anthropic.claude-3-5-sonnet"
+    model="claude-3-5-haiku-20241022"
 )
 
 cost_agent = Agent(
@@ -493,7 +493,7 @@ from strandkit.strands import get_tools_by_category
 
 # Create an agent with orchestrator tools (recommended starting point)
 agent = Agent(
-    model="anthropic.claude-3-5-sonnet",
+    model="claude-3-5-haiku-20241022",
     tools=get_tools_by_category('orchestrators')
 )
 
@@ -518,7 +518,7 @@ from strandkit.strands import get_tools_by_category
 
 # Security-focused agent
 security_agent = Agent(
-    model="anthropic.claude-3-5-sonnet",
+    model="claude-3-5-haiku-20241022",
     tools=(
         get_tools_by_category('iam') +
         get_tools_by_category('iam_security') +
@@ -554,7 +554,7 @@ from strandkit.strands import get_tools_by_category
 
 # Create agent with debugging tools
 debug_agent = Agent(
-    model="anthropic.claude-3-5-sonnet",
+    model="claude-3-5-haiku-20241022",
     tools=get_tools_by_category('cloudwatch')
 )
 
@@ -579,7 +579,7 @@ from strandkit.strands import get_tools_by_category
 
 # Create security agent with IAM and EC2 tools
 security_agent = Agent(
-    model="anthropic.claude-3-5-sonnet",
+    model="claude-3-5-haiku-20241022",
     tools=(
         get_tools_by_category('iam') +
         get_tools_by_category('iam_security') +
@@ -609,7 +609,7 @@ from strandkit.strands import get_tools_by_category
 
 # Create cost optimization agent
 cost_agent = Agent(
-    model="anthropic.claude-3-5-sonnet",
+    model="claude-3-5-haiku-20241022",
     tools=(
         get_tools_by_category('cost') +
         get_tools_by_category('cost_waste') +
@@ -640,7 +640,7 @@ from strandkit.strands import get_tools_by_category
 
 # Create IAM security agent
 iam_agent = Agent(
-    model="anthropic.claude-3-5-sonnet",
+    model="claude-3-5-haiku-20241022",
     tools=get_tools_by_category('iam_security')
 )
 
@@ -668,7 +668,7 @@ from strandkit.strands import get_tools_by_category
 
 # Create comprehensive infrastructure agent
 infra_agent = Agent(
-    model="anthropic.claude-3-5-sonnet",
+    model="claude-3-5-haiku-20241022",
     tools=(
         get_tools_by_category('ec2') +
         get_tools_by_category('rds') +
@@ -701,7 +701,7 @@ from strandkit.strands import get_tools_by_category
 
 # Create Bedrock optimization agent
 bedrock_agent = Agent(
-    model="anthropic.claude-3-5-sonnet",
+    model="claude-3-5-haiku-20241022",
     tools=get_tools_by_category('bedrock')
 )
 
