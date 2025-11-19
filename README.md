@@ -450,18 +450,18 @@ print(result['answer'])
 
 ## Installation
 
-### From Source (Current)
+### From PyPI (Recommended)
+
+```bash
+pip install strandkit
+```
+
+### From Source (Development)
 
 ```bash
 git clone https://github.com/lhassa8/StrandKit.git
 cd StrandKit
 pip install -e .
-```
-
-### From PyPI (Coming Soon)
-
-```bash
-pip install strandkit
 ```
 
 ## Quick Start
@@ -475,7 +475,7 @@ pip install strandkit
 
 2. **Install StrandKit**:
    ```bash
-   pip install -e .  # From source (until PyPI release)
+   pip install strandkit
    ```
 
 3. **AWS Credentials**: Configure AWS CLI or set environment variables
