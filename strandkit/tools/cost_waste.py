@@ -9,6 +9,12 @@ This module provides waste detection and cleanup tools:
 - get_cost_allocation_tags: Tag coverage and compliance analysis
 
 These tools help identify $10K-50K/year in waste for typical customers.
+
+PRICING NOTES:
+- All estimates are for us-east-1 on-demand pricing
+- EC2 pricing varies by instance family, size, and platform (Linux/Windows)
+- EBS io1/io2 IOPS costs can exceed storage costs by 10x or more
+- Use AWS Pricing Calculator for accurate quotes
 """
 
 from typing import Any, Dict, List, Optional, Set
@@ -17,6 +23,71 @@ from decimal import Decimal
 import statistics
 from strandkit.core.aws_client import AWSClient
 from strands import tool
+
+
+# ============================================================================
+# Pricing Data (us-east-1, on-demand, as of 2024)
+# ============================================================================
+
+# EBS Volume Pricing (per GB-month)
+EBS_PRICING = {
+    "gp3": 0.08,
+    "gp2": 0.10,
+    "io1": 0.125,  # Plus IOPS cost
+    "io2": 0.125,  # Plus IOPS cost
+    "st1": 0.045,
+    "sc1": 0.015,
+    "standard": 0.05
+}
+
+# EBS IOPS Pricing (per IOPS-month)
+EBS_IOPS_PRICING = {
+    "io1": 0.10,
+    "io2": 0.10,
+    "gp3": 0.005,  # Only above 3000 IOPS baseline
+}
+
+# EC2 Instance Pricing - Common types (Linux, per hour)
+# For comprehensive pricing, see ec2.py
+EC2_INSTANCE_PRICING = {
+    # T3 Burstable
+    't3.nano': 0.0052, 't3.micro': 0.0104, 't3.small': 0.0208,
+    't3.medium': 0.0416, 't3.large': 0.0832, 't3.xlarge': 0.1664,
+    't3.2xlarge': 0.3328,
+    # T3a AMD
+    't3a.nano': 0.0047, 't3a.micro': 0.0094, 't3a.small': 0.0188,
+    't3a.medium': 0.0376, 't3a.large': 0.0752, 't3a.xlarge': 0.1504,
+    # T4g Graviton
+    't4g.nano': 0.0042, 't4g.micro': 0.0084, 't4g.small': 0.0168,
+    't4g.medium': 0.0336, 't4g.large': 0.0672, 't4g.xlarge': 0.1344,
+    # M5 General Purpose
+    'm5.large': 0.096, 'm5.xlarge': 0.192, 'm5.2xlarge': 0.384,
+    'm5.4xlarge': 0.768, 'm5.8xlarge': 1.536, 'm5.12xlarge': 2.304,
+    # M6i General Purpose
+    'm6i.large': 0.096, 'm6i.xlarge': 0.192, 'm6i.2xlarge': 0.384,
+    'm6i.4xlarge': 0.768, 'm6i.8xlarge': 1.536,
+    # M6g Graviton
+    'm6g.medium': 0.0385, 'm6g.large': 0.077, 'm6g.xlarge': 0.154,
+    'm6g.2xlarge': 0.308, 'm6g.4xlarge': 0.616,
+    # C5 Compute Optimized
+    'c5.large': 0.085, 'c5.xlarge': 0.17, 'c5.2xlarge': 0.34,
+    'c5.4xlarge': 0.68, 'c5.9xlarge': 1.53,
+    # C6i Compute Optimized
+    'c6i.large': 0.085, 'c6i.xlarge': 0.17, 'c6i.2xlarge': 0.34,
+    'c6i.4xlarge': 0.68, 'c6i.8xlarge': 1.36,
+    # R5 Memory Optimized
+    'r5.large': 0.126, 'r5.xlarge': 0.252, 'r5.2xlarge': 0.504,
+    'r5.4xlarge': 1.008, 'r5.8xlarge': 2.016,
+    # R6i Memory Optimized
+    'r6i.large': 0.126, 'r6i.xlarge': 0.252, 'r6i.2xlarge': 0.504,
+    'r6i.4xlarge': 1.008, 'r6i.8xlarge': 2.016,
+    # I3 Storage Optimized
+    'i3.large': 0.156, 'i3.xlarge': 0.312, 'i3.2xlarge': 0.624,
+    'i3.4xlarge': 1.248, 'i3.8xlarge': 2.496,
+    # GPU Instances
+    'g4dn.xlarge': 0.526, 'g4dn.2xlarge': 0.752, 'g4dn.4xlarge': 1.204,
+    'p3.2xlarge': 3.06, 'p3.8xlarge': 12.24,
+}
 
 
 # ============================================================================
@@ -40,21 +111,68 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
     return default
 
 
+def _get_ec2_hourly_cost(instance_type: str) -> float:
+    """
+    Get hourly cost for an EC2 instance type.
+
+    Args:
+        instance_type: EC2 instance type (e.g., 'm5.large')
+
+    Returns:
+        Hourly cost in USD (Linux pricing)
+    """
+    if instance_type in EC2_INSTANCE_PRICING:
+        return EC2_INSTANCE_PRICING[instance_type]
+
+    # Estimate for unknown types based on family and size
+    parts = instance_type.split('.')
+    if len(parts) == 2:
+        family, size = parts
+
+        size_multipliers = {
+            'nano': 0.25, 'micro': 0.5, 'small': 1, 'medium': 2,
+            'large': 4, 'xlarge': 8, '2xlarge': 16, '4xlarge': 32,
+            '8xlarge': 64, '12xlarge': 96, '16xlarge': 128, '24xlarge': 192,
+        }
+
+        family_base_costs = {
+            't': 0.02, 'm': 0.024, 'c': 0.021, 'r': 0.032,
+            'i': 0.039, 'd': 0.17, 'x': 0.42, 'p': 0.77, 'g': 0.13,
+        }
+
+        family_prefix = family[0] if family else 'm'
+        base_cost = family_base_costs.get(family_prefix, 0.024)
+        multiplier = size_multipliers.get(size, 4) / 4
+
+        return base_cost * multiplier
+
+    return 0.10  # Default fallback
+
+
 @tool
-def _calculate_ebs_cost(size_gb: int, volume_type: str = "gp3") -> float:
-    """Calculate monthly EBS cost."""
-    # Pricing per GB/month (approximate us-east-1)
-    pricing = {
-        "gp3": 0.08,
-        "gp2": 0.10,
-        "io1": 0.125,
-        "io2": 0.125,
-        "st1": 0.045,
-        "sc1": 0.015,
-        "standard": 0.05
-    }
-    price_per_gb = pricing.get(volume_type, 0.08)
-    return size_gb * price_per_gb
+def _calculate_ebs_cost(size_gb: int, volume_type: str = "gp3", iops: int = 0) -> float:
+    """
+    Calculate monthly EBS cost including IOPS for io1/io2.
+
+    Args:
+        size_gb: Volume size in GB
+        volume_type: EBS volume type
+        iops: Provisioned IOPS (for io1/io2)
+
+    Returns:
+        Monthly cost in USD
+    """
+    price_per_gb = EBS_PRICING.get(volume_type, 0.08)
+    storage_cost = size_gb * price_per_gb
+
+    # Add IOPS cost for io1/io2
+    iops_cost = 0.0
+    if volume_type in ('io1', 'io2') and iops > 0:
+        iops_cost = iops * EBS_IOPS_PRICING.get(volume_type, 0.10)
+    elif volume_type == 'gp3' and iops > 3000:
+        iops_cost = (iops - 3000) * EBS_IOPS_PRICING['gp3']
+
+    return storage_cost + iops_cost
 
 
 @tool
@@ -481,8 +599,9 @@ def analyze_idle_resources(
                         max_cpu = max([dp["Maximum"] for dp in datapoints])
 
                         if avg_cpu < cpu_threshold:
-                            # Estimate cost (simplified)
-                            monthly_cost = 50.0  # Placeholder - would need pricing API
+                            # Estimate cost using pricing table
+                            hourly_cost = _get_ec2_hourly_cost(instance_type)
+                            monthly_cost = hourly_cost * 730  # 730 hours/month
 
                             idle_resources.append({
                                 "resource_type": "EC2 Instance",
@@ -490,7 +609,8 @@ def analyze_idle_resources(
                                 "instance_type": instance_type,
                                 "avg_cpu": round(avg_cpu, 2),
                                 "max_cpu": round(max_cpu, 2),
-                                "monthly_cost": monthly_cost,
+                                "hourly_cost": round(hourly_cost, 4),
+                                "monthly_cost": round(monthly_cost, 2),
                                 "recommendation": f"Stop or downsize - CPU avg {avg_cpu:.1f}%, max {max_cpu:.1f}%"
                             })
                             by_service["EC2"] = by_service.get("EC2", 0) + monthly_cost

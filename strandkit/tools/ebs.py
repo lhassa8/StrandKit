@@ -14,6 +14,14 @@ All tools follow consistent patterns:
 - Return structured JSON with consistent keys
 - Include cost savings calculations
 - Provide actionable recommendations
+
+PRICING NOTES:
+- EBS storage: gp3 $0.08/GB, gp2 $0.10/GB, io1/io2 $0.125/GB
+- EBS IOPS: io1/io2 $0.10/IOPS (all provisioned), gp3 $0.005/IOPS (above 3000 baseline)
+- EBS throughput: gp3 $0.04/MB/s (above 125 MB/s baseline)
+- Snapshots: $0.05/GB-month (incremental)
+- All estimates are for us-east-1; other regions may vary 10-20%
+- Use AWS Pricing Calculator for accurate quotes
 """
 
 from datetime import datetime, timezone, timedelta
@@ -35,11 +43,11 @@ EBS_PRICING = {
     'standard': 0.05
 }
 
-# IOPS Pricing (per IOPS-month)
+# IOPS Pricing (per IOPS-month, us-east-1)
 IOPS_PRICING = {
-    'gp3': 0.005,  # Above 3000 IOPS
-    'io1': 0.065,
-    'io2': 0.065
+    'gp3': 0.005,  # Above 3000 IOPS baseline
+    'io1': 0.10,   # All provisioned IOPS
+    'io2': 0.10    # All provisioned IOPS (same as io1)
 }
 
 # Throughput Pricing (per MB/s-month)

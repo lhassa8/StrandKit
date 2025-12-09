@@ -10,12 +10,300 @@ This module provides comprehensive RDS analysis tools for:
 
 All functions are decorated with @tool for AWS Strands Agents integration
 and can also be used standalone.
+
+PRICING NOTES:
+- RDS pricing varies significantly by engine, edition, and licensing model
+- Oracle/SQL Server License Included can be 2-8x open-source pricing
+- io1/io2 IOPS costs can exceed storage costs by 10x or more
+- All estimates are for us-east-1; other regions may vary 10-30%
+- Use AWS Pricing Calculator for accurate quotes
 """
 
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 from strands import tool
 from strandkit.core.aws_client import AWSClient
+
+
+# =============================================================================
+# RDS PRICING DATA (us-east-1, as of 2024)
+# =============================================================================
+# Source: https://instances.vantage.sh/aws/rds/ and AWS pricing pages
+# These are approximate and should be updated periodically
+
+# Instance hourly costs by class and engine
+# Format: {instance_class: {engine_key: hourly_cost}}
+# Engine keys: 'mysql', 'postgres', 'mariadb', 'oracle-se2-li', 'oracle-ee-byol',
+#              'sqlserver-ex', 'sqlserver-web', 'sqlserver-se', 'sqlserver-ee'
+RDS_INSTANCE_PRICING = {
+    # T3 Burstable instances
+    'db.t3.micro': {
+        'mysql': 0.017, 'postgres': 0.017, 'mariadb': 0.017,
+        'oracle-se2-li': 0.026, 'oracle-ee-byol': 0.017,
+        'sqlserver-ex': 0.017, 'sqlserver-web': 0.019,
+        'sqlserver-se': 0.122, 'sqlserver-ee': 0.234,
+    },
+    'db.t3.small': {
+        'mysql': 0.034, 'postgres': 0.034, 'mariadb': 0.034,
+        'oracle-se2-li': 0.052, 'oracle-ee-byol': 0.034,
+        'sqlserver-ex': 0.034, 'sqlserver-web': 0.038,
+        'sqlserver-se': 0.244, 'sqlserver-ee': 0.468,
+    },
+    'db.t3.medium': {
+        'mysql': 0.068, 'postgres': 0.068, 'mariadb': 0.068,
+        'oracle-se2-li': 0.104, 'oracle-ee-byol': 0.068,
+        'sqlserver-ex': 0.068, 'sqlserver-web': 0.076,
+        'sqlserver-se': 0.296, 'sqlserver-ee': 0.544,
+    },
+    'db.t3.large': {
+        'mysql': 0.136, 'postgres': 0.136, 'mariadb': 0.136,
+        'oracle-se2-li': 0.208, 'oracle-ee-byol': 0.136,
+        'sqlserver-ex': 0.136, 'sqlserver-web': 0.152,
+        'sqlserver-se': 0.592, 'sqlserver-ee': 1.088,
+    },
+    # T4g Graviton instances (not available for Oracle/SQL Server)
+    'db.t4g.micro': {
+        'mysql': 0.016, 'postgres': 0.016, 'mariadb': 0.016,
+    },
+    'db.t4g.small': {
+        'mysql': 0.032, 'postgres': 0.032, 'mariadb': 0.032,
+    },
+    'db.t4g.medium': {
+        'mysql': 0.064, 'postgres': 0.064, 'mariadb': 0.064,
+    },
+    # M5 General Purpose instances
+    'db.m5.large': {
+        'mysql': 0.235, 'postgres': 0.235, 'mariadb': 0.234,
+        'oracle-se2-li': 0.248, 'oracle-ee-byol': 0.208,
+        'sqlserver-ex': 0.189, 'sqlserver-web': 0.198,
+        'sqlserver-se': 0.570, 'sqlserver-ee': 1.322,
+    },
+    'db.m5.xlarge': {
+        'mysql': 0.470, 'postgres': 0.470, 'mariadb': 0.468,
+        'oracle-se2-li': 0.496, 'oracle-ee-byol': 0.416,
+        'sqlserver-ex': 0.378, 'sqlserver-web': 0.396,
+        'sqlserver-se': 1.140, 'sqlserver-ee': 2.644,
+    },
+    'db.m5.2xlarge': {
+        'mysql': 0.940, 'postgres': 0.940, 'mariadb': 0.936,
+        'oracle-se2-li': 0.992, 'oracle-ee-byol': 0.832,
+        'sqlserver-ex': 0.756, 'sqlserver-web': 0.792,
+        'sqlserver-se': 2.280, 'sqlserver-ee': 5.288,
+    },
+    # R5 Memory Optimized instances
+    'db.r5.large': {
+        'mysql': 0.290, 'postgres': 0.290, 'mariadb': 0.288,
+        'oracle-se2-li': 0.306, 'oracle-ee-byol': 0.256,
+        'sqlserver-ex': 0.232, 'sqlserver-web': 0.244,
+        'sqlserver-se': 0.616, 'sqlserver-ee': 1.368,
+    },
+    'db.r5.xlarge': {
+        'mysql': 0.580, 'postgres': 0.580, 'mariadb': 0.576,
+        'oracle-se2-li': 0.612, 'oracle-ee-byol': 0.512,
+        'sqlserver-ex': 0.464, 'sqlserver-web': 0.488,
+        'sqlserver-se': 1.232, 'sqlserver-ee': 2.736,
+    },
+    'db.r5.2xlarge': {
+        'mysql': 1.160, 'postgres': 1.160, 'mariadb': 1.152,
+        'oracle-se2-li': 1.224, 'oracle-ee-byol': 1.024,
+        'sqlserver-ex': 0.928, 'sqlserver-web': 0.976,
+        'sqlserver-se': 2.464, 'sqlserver-ee': 5.472,
+    },
+}
+
+# Storage pricing per GB-month
+RDS_STORAGE_PRICING = {
+    'gp2': 0.115,
+    'gp3': 0.08,
+    'io1': 0.125,  # Plus IOPS cost
+    'io2': 0.125,  # Plus IOPS cost (same as io1)
+    'magnetic': 0.10,  # Legacy standard storage
+}
+
+# IOPS pricing per provisioned IOPS-month (for io1/io2)
+RDS_IOPS_PRICING = {
+    'io1': 0.10,
+    'io2': 0.10,  # Same as io1
+    'gp3': 0.005,  # Only for IOPS above baseline 3000
+}
+
+# Backup storage pricing (beyond free allocation)
+RDS_BACKUP_PRICING_PER_GB = 0.095
+
+
+def _get_engine_key(engine: str, license_model: str = None) -> str:
+    """
+    Convert RDS engine name to pricing key.
+
+    Args:
+        engine: RDS engine (e.g., 'mysql', 'oracle-se2', 'sqlserver-ee')
+        license_model: 'license-included' or 'bring-your-own-license'
+
+    Returns:
+        Pricing key for RDS_INSTANCE_PRICING lookup
+    """
+    engine_lower = engine.lower()
+
+    # Open source engines
+    if 'mysql' in engine_lower:
+        return 'mysql'
+    if 'postgres' in engine_lower:
+        return 'postgres'
+    if 'mariadb' in engine_lower:
+        return 'mariadb'
+
+    # Oracle
+    if 'oracle' in engine_lower:
+        if license_model and 'bring' in license_model.lower():
+            return 'oracle-ee-byol'
+        # License included - check edition
+        if 'se2' in engine_lower or 'se1' in engine_lower:
+            return 'oracle-se2-li'
+        return 'oracle-ee-byol'  # Default to BYOL for EE
+
+    # SQL Server
+    if 'sqlserver' in engine_lower:
+        if 'express' in engine_lower or '-ex' in engine_lower:
+            return 'sqlserver-ex'
+        if 'web' in engine_lower:
+            return 'sqlserver-web'
+        if 'enterprise' in engine_lower or '-ee' in engine_lower:
+            return 'sqlserver-ee'
+        if 'standard' in engine_lower or '-se' in engine_lower:
+            return 'sqlserver-se'
+        return 'sqlserver-se'  # Default to Standard
+
+    # Default to MySQL pricing for unknown engines
+    return 'mysql'
+
+
+def _estimate_instance_cost(
+    instance_class: str,
+    engine: str,
+    license_model: str = None,
+    multi_az: bool = False
+) -> Dict[str, Any]:
+    """
+    Estimate hourly and monthly instance cost.
+
+    Args:
+        instance_class: RDS instance class (e.g., 'db.m5.large')
+        engine: Database engine
+        license_model: Licensing model
+        multi_az: Whether Multi-AZ is enabled
+
+    Returns:
+        Dict with hourly_cost, monthly_cost, and pricing notes
+    """
+    engine_key = _get_engine_key(engine, license_model)
+
+    # Look up pricing
+    if instance_class in RDS_INSTANCE_PRICING:
+        class_pricing = RDS_INSTANCE_PRICING[instance_class]
+        if engine_key in class_pricing:
+            hourly_cost = class_pricing[engine_key]
+        else:
+            # Engine not available for this instance class (e.g., T4g + Oracle)
+            hourly_cost = class_pricing.get('mysql', 0.10)
+            engine_key = f"{engine_key} (estimated from mysql)"
+    else:
+        # Unknown instance class - rough estimate
+        hourly_cost = 0.20
+        engine_key = f"{engine_key} (unknown instance class)"
+
+    monthly_hours = 730
+    monthly_cost = hourly_cost * monthly_hours
+
+    if multi_az:
+        monthly_cost *= 2
+
+    return {
+        'hourly_cost': round(hourly_cost, 4),
+        'monthly_cost': round(monthly_cost, 2),
+        'engine_key': engine_key,
+        'multi_az_multiplier': 2 if multi_az else 1,
+    }
+
+
+def _estimate_storage_cost(
+    storage_type: str,
+    allocated_storage_gb: int,
+    provisioned_iops: int = 0,
+    multi_az: bool = False
+) -> Dict[str, Any]:
+    """
+    Estimate monthly storage cost including IOPS.
+
+    Args:
+        storage_type: Storage type (gp2, gp3, io1, io2)
+        allocated_storage_gb: Allocated storage in GB
+        provisioned_iops: Provisioned IOPS (for io1/io2)
+        multi_az: Whether Multi-AZ is enabled
+
+    Returns:
+        Dict with storage_cost, iops_cost, total, and breakdown
+    """
+    storage_type_lower = storage_type.lower() if storage_type else 'gp2'
+
+    # Base storage cost
+    storage_rate = RDS_STORAGE_PRICING.get(storage_type_lower, 0.115)
+    storage_cost = allocated_storage_gb * storage_rate
+
+    # IOPS cost (io1/io2)
+    iops_cost = 0.0
+    if storage_type_lower in ('io1', 'io2') and provisioned_iops > 0:
+        iops_rate = RDS_IOPS_PRICING.get(storage_type_lower, 0.10)
+        iops_cost = provisioned_iops * iops_rate
+
+    # gp3 additional IOPS (above baseline 3000)
+    if storage_type_lower == 'gp3' and provisioned_iops > 3000:
+        additional_iops = provisioned_iops - 3000
+        iops_cost = additional_iops * RDS_IOPS_PRICING['gp3']
+
+    total_cost = storage_cost + iops_cost
+
+    # Multi-AZ doubles storage cost
+    if multi_az:
+        storage_cost *= 2
+        total_cost = storage_cost + iops_cost  # IOPS not doubled
+
+    return {
+        'storage_cost': round(storage_cost, 2),
+        'iops_cost': round(iops_cost, 2),
+        'total_cost': round(total_cost, 2),
+        'storage_rate_per_gb': storage_rate,
+        'provisioned_iops': provisioned_iops,
+        'multi_az_storage_multiplier': 2 if multi_az else 1,
+    }
+
+
+def _estimate_backup_cost(
+    total_backup_gb: int,
+    allocated_storage_gb: int
+) -> Dict[str, Any]:
+    """
+    Estimate backup storage cost accounting for free tier.
+
+    Free tier: Backup storage up to 100% of provisioned DB storage is free.
+
+    Args:
+        total_backup_gb: Total backup storage in GB
+        allocated_storage_gb: Provisioned database storage in GB
+
+    Returns:
+        Dict with free_allocation, billable_gb, and monthly_cost
+    """
+    free_allocation = allocated_storage_gb  # 100% of DB size is free
+    billable_gb = max(0, total_backup_gb - free_allocation)
+    monthly_cost = billable_gb * RDS_BACKUP_PRICING_PER_GB
+
+    return {
+        'total_backup_gb': total_backup_gb,
+        'free_allocation_gb': free_allocation,
+        'billable_gb': billable_gb,
+        'monthly_cost': round(monthly_cost, 2),
+        'rate_per_gb': RDS_BACKUP_PRICING_PER_GB,
+    }
 
 
 @tool
@@ -69,6 +357,7 @@ def analyze_rds_instance(
             'storage_type': db.get('StorageType', 'Unknown'),
             'allocated_storage_gb': db.get('AllocatedStorage', 0),
             'iops': db.get('Iops', 0),
+            'license_model': db.get('LicenseModel', 'Unknown'),
             'created': db.get('InstanceCreateTime', 'Unknown')
         }
 
@@ -129,48 +418,40 @@ def analyze_rds_instance(
             'lookback_days': 7
         }
 
-        # Cost estimation
-        # RDS pricing is complex - these are rough estimates
-        instance_class = config['instance_class']
-        storage_gb = config['allocated_storage_gb']
+        # Cost estimation using engine-aware pricing
+        instance_cost_estimate = _estimate_instance_cost(
+            instance_class=config['instance_class'],
+            engine=config['engine'],
+            license_model=config['license_model'],
+            multi_az=config['multi_az']
+        )
 
-        # Rough hourly cost by instance class (US East 1, on-demand)
-        instance_costs = {
-            'db.t3.micro': 0.017,
-            'db.t3.small': 0.034,
-            'db.t3.medium': 0.068,
-            'db.t3.large': 0.136,
-            'db.t4g.micro': 0.016,
-            'db.t4g.small': 0.032,
-            'db.t4g.medium': 0.064,
-            'db.m5.large': 0.192,
-            'db.m5.xlarge': 0.384,
-            'db.m5.2xlarge': 0.768,
-            'db.r5.large': 0.24,
-            'db.r5.xlarge': 0.48,
-            'db.r5.2xlarge': 0.96,
-        }
+        storage_cost_estimate = _estimate_storage_cost(
+            storage_type=config['storage_type'],
+            allocated_storage_gb=config['allocated_storage_gb'],
+            provisioned_iops=config['iops'],
+            multi_az=config['multi_az']
+        )
 
-        hourly_cost = instance_costs.get(instance_class, 0.10)  # Default estimate
-        storage_cost_per_gb = 0.115  # GP2 pricing
-        if config['storage_type'] == 'gp3':
-            storage_cost_per_gb = 0.08
-        elif config['storage_type'] == 'io1':
-            storage_cost_per_gb = 0.125
-
-        monthly_instance_cost = hourly_cost * 730  # 730 hours/month
-        monthly_storage_cost = storage_gb * storage_cost_per_gb
-
-        if config['multi_az']:
-            monthly_instance_cost *= 2  # Multi-AZ doubles cost
+        total_monthly = instance_cost_estimate['monthly_cost'] + storage_cost_estimate['total_cost']
 
         cost = {
-            'hourly_instance_cost': round(hourly_cost, 3),
-            'monthly_instance_cost': round(monthly_instance_cost, 2),
-            'monthly_storage_cost': round(monthly_storage_cost, 2),
-            'total_monthly_cost': round(monthly_instance_cost + monthly_storage_cost, 2),
-            'annual_cost': round((monthly_instance_cost + monthly_storage_cost) * 12, 2),
-            'note': 'Estimate based on on-demand pricing (US East 1)'
+            'hourly_instance_cost': instance_cost_estimate['hourly_cost'],
+            'monthly_instance_cost': instance_cost_estimate['monthly_cost'],
+            'monthly_storage_cost': storage_cost_estimate['storage_cost'],
+            'monthly_iops_cost': storage_cost_estimate['iops_cost'],
+            'total_monthly_cost': round(total_monthly, 2),
+            'annual_cost': round(total_monthly * 12, 2),
+            'pricing_details': {
+                'engine_pricing_key': instance_cost_estimate['engine_key'],
+                'storage_rate_per_gb': storage_cost_estimate['storage_rate_per_gb'],
+                'provisioned_iops': storage_cost_estimate['provisioned_iops'],
+                'multi_az_instance_multiplier': instance_cost_estimate['multi_az_multiplier'],
+                'multi_az_storage_multiplier': storage_cost_estimate['multi_az_storage_multiplier'],
+            },
+            'note': 'Estimate based on on-demand pricing (us-east-1). '
+                    'Oracle/SQL Server License Included and io1/io2 IOPS can significantly increase costs. '
+                    'Use AWS Pricing Calculator for accurate quotes.'
         }
 
         # Security analysis
@@ -233,12 +514,18 @@ def analyze_rds_instance(
 
         # Storage type recommendations
         if config['storage_type'] == 'gp2':
-            savings = (storage_cost_per_gb - 0.08) * storage_gb
+            gp2_rate = RDS_STORAGE_PRICING['gp2']
+            gp3_rate = RDS_STORAGE_PRICING['gp3']
+            storage_gb = config['allocated_storage_gb']
+            savings = (gp2_rate - gp3_rate) * storage_gb
+            if config['multi_az']:
+                savings *= 2  # Multi-AZ doubles storage cost
             recommendations.append({
                 'type': 'cost',
                 'priority': 'medium',
                 'recommendation': 'Migrate from gp2 to gp3 storage for cost savings',
-                'potential_savings': f'${savings:.2f}/month'
+                'potential_savings': f'${savings:.2f}/month',
+                'details': f'gp2: ${gp2_rate}/GB vs gp3: ${gp3_rate}/GB ({storage_gb} GB)'
             })
 
         # Multi-AZ recommendation
@@ -386,47 +673,55 @@ def find_idle_databases(
             cpu_max = max(dp['Maximum'] for dp in datapoints)
 
             if cpu_avg < cpu_threshold:
-                # Calculate potential savings
-                # Rough estimates
-                instance_costs = {
-                    'db.t3.micro': 0.017,
-                    'db.t3.small': 0.034,
-                    'db.t3.medium': 0.068,
-                    'db.t3.large': 0.136,
-                    'db.m5.large': 0.192,
-                    'db.m5.xlarge': 0.384,
-                    'db.r5.large': 0.24,
-                    'db.r5.xlarge': 0.48,
-                }
+                # Calculate costs using engine-aware pricing
+                engine = db['Engine']
+                license_model = db.get('LicenseModel', None)
+                multi_az = db.get('MultiAZ', False)
+                storage_type = db.get('StorageType', 'gp2')
+                allocated_storage = db.get('AllocatedStorage', 0)
+                provisioned_iops = db.get('Iops', 0)
 
-                hourly_cost = instance_costs.get(instance_class, 0.10)
-                monthly_cost = hourly_cost * 730
+                instance_cost = _estimate_instance_cost(
+                    instance_class=instance_class,
+                    engine=engine,
+                    license_model=license_model,
+                    multi_az=multi_az
+                )
 
-                # If Multi-AZ, double the cost
-                if db.get('MultiAZ', False):
-                    monthly_cost *= 2
+                storage_cost = _estimate_storage_cost(
+                    storage_type=storage_type,
+                    allocated_storage_gb=allocated_storage,
+                    provisioned_iops=provisioned_iops,
+                    multi_az=multi_az
+                )
 
-                # Estimate savings from downsizing (50% if very idle)
+                monthly_cost = instance_cost['monthly_cost'] + storage_cost['total_cost']
+
+                # Estimate savings from downsizing (50% of instance cost if very idle)
                 if cpu_avg < 5:
-                    potential_savings = monthly_cost * 0.5
-                    recommendation = 'Downsize to smaller instance class (50% savings)'
+                    potential_savings = instance_cost['monthly_cost'] * 0.5
+                    recommendation = 'Downsize to smaller instance class (50% instance savings)'
                 else:
-                    potential_savings = monthly_cost * 0.3
-                    recommendation = 'Consider downsizing instance class (30% savings)'
+                    potential_savings = instance_cost['monthly_cost'] * 0.3
+                    recommendation = 'Consider downsizing instance class (30% instance savings)'
 
                 total_potential_savings += potential_savings
 
                 idle_databases.append({
                     'instance_identifier': db_id,
                     'instance_class': instance_class,
-                    'engine': db['Engine'],
+                    'engine': engine,
+                    'license_model': license_model,
                     'cpu_average': round(cpu_avg, 2),
                     'cpu_maximum': round(cpu_max, 2),
-                    'monthly_cost': round(monthly_cost, 2),
+                    'monthly_instance_cost': instance_cost['monthly_cost'],
+                    'monthly_storage_cost': storage_cost['total_cost'],
+                    'monthly_total_cost': round(monthly_cost, 2),
                     'potential_monthly_savings': round(potential_savings, 2),
                     'potential_annual_savings': round(potential_savings * 12, 2),
                     'recommendation': recommendation,
-                    'risk': 'low' if cpu_avg > 5 else 'medium'
+                    'risk': 'low' if cpu_avg > 5 else 'medium',
+                    'pricing_note': instance_cost['engine_key']
                 })
 
         # Sort by potential savings
@@ -516,6 +811,11 @@ def analyze_rds_backups(
                 'issue': None if is_compliant else f'Retention only {retention} days (minimum 7 recommended)'
             })
 
+        # Calculate total provisioned storage across all instances (for free tier)
+        total_provisioned_storage = sum(
+            inst.get('AllocatedStorage', 0) for inst in instances
+        )
+
         # Analyze manual snapshots
         snapshot_analysis = []
         total_snapshot_size = 0
@@ -549,20 +849,24 @@ def analyze_rds_backups(
                     'recommendation': 'Consider deleting if no longer needed'
                 })
 
-        # Cost estimation
-        # RDS snapshots: $0.095/GB-month (roughly)
-        snapshot_cost_per_gb = 0.095
-        monthly_snapshot_cost = total_snapshot_size * snapshot_cost_per_gb
-
-        # Automated backup costs (included in instance cost for retention period)
-        # Additional cost for long retention
+        # Cost estimation using free tier calculation
+        # Free tier: Backup storage up to 100% of total provisioned DB storage is free
+        backup_cost = _estimate_backup_cost(
+            total_backup_gb=total_snapshot_size,
+            allocated_storage_gb=total_provisioned_storage
+        )
 
         costs = {
             'total_snapshot_size_gb': total_snapshot_size,
-            'monthly_snapshot_cost': round(monthly_snapshot_cost, 2),
-            'annual_snapshot_cost': round(monthly_snapshot_cost * 12, 2),
-            'cost_per_gb_month': snapshot_cost_per_gb,
-            'note': 'Manual snapshot costs only - automated backups included in instance cost'
+            'total_provisioned_storage_gb': total_provisioned_storage,
+            'free_backup_allocation_gb': backup_cost['free_allocation_gb'],
+            'billable_backup_gb': backup_cost['billable_gb'],
+            'monthly_snapshot_cost': backup_cost['monthly_cost'],
+            'annual_snapshot_cost': round(backup_cost['monthly_cost'] * 12, 2),
+            'cost_per_gb_month': RDS_BACKUP_PRICING_PER_GB,
+            'note': 'Backup storage up to 100% of provisioned DB storage is FREE. '
+                    'Only storage exceeding this amount is charged at $0.095/GB-month. '
+                    'Automated backups within retention period use the same free allocation.'
         }
 
         # Compliance scoring
@@ -693,26 +997,43 @@ def get_rds_recommendations(
             datapoints = cpu_response.get('Datapoints', [])
             cpu_avg = sum(dp['Average'] for dp in datapoints) / len(datapoints) if datapoints else 50
 
+            # Get license model for accurate pricing
+            license_model = db.get('LicenseModel', None)
+            provisioned_iops = db.get('Iops', 0)
+
+            # Calculate current costs
+            current_instance_cost = _estimate_instance_cost(
+                instance_class=instance_class,
+                engine=engine,
+                license_model=license_model,
+                multi_az=multi_az
+            )
+
             # Rightsizing recommendations
             if cpu_avg < 20:
-                # Rough cost estimates
-                instance_costs = {
-                    'db.t3.medium': (0.068, 'db.t3.small', 0.034),
-                    'db.t3.large': (0.136, 'db.t3.medium', 0.068),
-                    'db.m5.large': (0.192, 'db.t3.large', 0.136),
-                    'db.m5.xlarge': (0.384, 'db.m5.large', 0.192),
-                    'db.m5.2xlarge': (0.768, 'db.m5.xlarge', 0.384),
-                    'db.r5.large': (0.24, 'db.m5.large', 0.192),
-                    'db.r5.xlarge': (0.48, 'db.r5.large', 0.24),
+                # Define downgrade paths (current -> recommended)
+                downgrade_paths = {
+                    'db.t3.medium': 'db.t3.small',
+                    'db.t3.large': 'db.t3.medium',
+                    'db.m5.large': 'db.t3.large',
+                    'db.m5.xlarge': 'db.m5.large',
+                    'db.m5.2xlarge': 'db.m5.xlarge',
+                    'db.r5.large': 'db.m5.large',
+                    'db.r5.xlarge': 'db.r5.large',
+                    'db.r5.2xlarge': 'db.r5.xlarge',
                 }
 
-                if instance_class in instance_costs:
-                    current_cost, recommended_class, recommended_cost = instance_costs[instance_class]
-                    monthly_savings = (current_cost - recommended_cost) * 730
+                if instance_class in downgrade_paths:
+                    recommended_class = downgrade_paths[instance_class]
 
-                    if multi_az:
-                        monthly_savings *= 2
+                    recommended_cost = _estimate_instance_cost(
+                        instance_class=recommended_class,
+                        engine=engine,
+                        license_model=license_model,
+                        multi_az=multi_az
+                    )
 
+                    monthly_savings = current_instance_cost['monthly_cost'] - recommended_cost['monthly_cost']
                     total_potential_savings += monthly_savings
 
                     recommendations.append({
@@ -721,17 +1042,26 @@ def get_rds_recommendations(
                         'priority': 'high',
                         'current_class': instance_class,
                         'recommended_class': recommended_class,
+                        'engine': engine,
                         'cpu_utilization': round(cpu_avg, 2),
+                        'current_monthly_cost': current_instance_cost['monthly_cost'],
+                        'recommended_monthly_cost': recommended_cost['monthly_cost'],
                         'monthly_savings': round(monthly_savings, 2),
                         'annual_savings': round(monthly_savings * 12, 2),
                         'recommendation': f'Downsize from {instance_class} to {recommended_class}',
                         'risk': 'low',
-                        'effort': 'medium'
+                        'effort': 'medium',
+                        'pricing_note': f'Based on {current_instance_cost["engine_key"]} pricing'
                     })
 
             # Storage optimization (gp2 to gp3)
             if storage_type == 'gp2':
-                storage_savings = allocated_storage * (0.115 - 0.08)  # $0.035/GB savings
+                gp2_rate = RDS_STORAGE_PRICING['gp2']
+                gp3_rate = RDS_STORAGE_PRICING['gp3']
+                storage_savings = allocated_storage * (gp2_rate - gp3_rate)
+                if multi_az:
+                    storage_savings *= 2  # Multi-AZ doubles storage cost
+
                 total_potential_savings += storage_savings
 
                 recommendations.append({
@@ -743,25 +1073,42 @@ def get_rds_recommendations(
                     'monthly_savings': round(storage_savings, 2),
                     'annual_savings': round(storage_savings * 12, 2),
                     'recommendation': f'Migrate {allocated_storage} GB from gp2 to gp3 storage',
+                    'details': f'gp2: ${gp2_rate}/GB vs gp3: ${gp3_rate}/GB',
                     'risk': 'low',
                     'effort': 'low'
                 })
 
             # Multi-AZ recommendation for production
             if not multi_az and 'prod' in db_id.lower():
-                instance_cost = 0.10 * 730  # Rough estimate
+                cost_increase = current_instance_cost['monthly_cost']  # Multi-AZ doubles instance cost
                 recommendations.append({
                     'db_instance': db_id,
                     'type': 'reliability',
                     'priority': 'high',
                     'current_config': 'Single-AZ',
                     'recommended_config': 'Multi-AZ',
-                    'cost_increase': round(instance_cost, 2),
+                    'cost_increase': round(cost_increase, 2),
                     'recommendation': f'Enable Multi-AZ for production database {db_id}',
                     'risk': 'high_without',
                     'effort': 'low',
                     'benefit': 'Automatic failover and high availability'
                 })
+
+            # io1/io2 IOPS cost warning
+            if storage_type in ('io1', 'io2') and provisioned_iops > 0:
+                iops_cost = provisioned_iops * RDS_IOPS_PRICING.get(storage_type, 0.10)
+                if iops_cost > 100:  # Flag high IOPS costs
+                    recommendations.append({
+                        'db_instance': db_id,
+                        'type': 'cost_awareness',
+                        'priority': 'info',
+                        'current_iops': provisioned_iops,
+                        'monthly_iops_cost': round(iops_cost, 2),
+                        'recommendation': f'High IOPS cost: ${iops_cost:.2f}/month for {provisioned_iops} IOPS',
+                        'details': 'Consider if this IOPS level is necessary. gp3 provides 3000 IOPS baseline for free.',
+                        'risk': 'none',
+                        'effort': 'medium'
+                    })
 
         # Sort recommendations by potential savings
         recommendations.sort(key=lambda x: x.get('monthly_savings', 0), reverse=True)

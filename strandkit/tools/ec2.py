@@ -3,6 +3,15 @@ EC2 and Compute Visibility Tools
 
 This module provides tools for analyzing EC2 instances, security groups,
 and compute resources for health, security, and cost optimization.
+
+PRICING NOTES:
+- EC2 pricing varies significantly by instance family, size, and platform (Linux/Windows)
+- Windows instances typically cost 1.5-2x more than Linux due to licensing
+- Graviton (arm64) instances are typically 20% cheaper than x86 equivalents
+- Spot instances can be 60-90% cheaper but may be interrupted
+- Reserved Instances and Savings Plans can reduce costs by 30-72%
+- All estimates are for us-east-1 on-demand pricing; other regions may vary 10-30%
+- Use AWS Pricing Calculator for accurate quotes
 """
 
 from datetime import datetime, timedelta
@@ -21,6 +30,332 @@ except ImportError:
 
 from strandkit.core.aws_client import AWSClient
 from strands import tool
+
+
+# =============================================================================
+# EC2 PRICING DATA (us-east-1, on-demand, as of 2024)
+# =============================================================================
+# Source: https://instances.vantage.sh/ and AWS pricing pages
+# Format: {instance_type: {'linux': hourly_cost, 'windows': hourly_cost}}
+
+EC2_INSTANCE_PRICING = {
+    # T2 Burstable (Previous Gen)
+    't2.nano': {'linux': 0.0058, 'windows': 0.0082},
+    't2.micro': {'linux': 0.0116, 'windows': 0.0162},
+    't2.small': {'linux': 0.023, 'windows': 0.032},
+    't2.medium': {'linux': 0.0464, 'windows': 0.064},
+    't2.large': {'linux': 0.0928, 'windows': 0.128},
+    't2.xlarge': {'linux': 0.1856, 'windows': 0.256},
+    't2.2xlarge': {'linux': 0.3712, 'windows': 0.512},
+
+    # T3 Burstable (Current Gen)
+    't3.nano': {'linux': 0.0052, 'windows': 0.0076},
+    't3.micro': {'linux': 0.0104, 'windows': 0.0152},
+    't3.small': {'linux': 0.0208, 'windows': 0.0304},
+    't3.medium': {'linux': 0.0416, 'windows': 0.0608},
+    't3.large': {'linux': 0.0832, 'windows': 0.1216},
+    't3.xlarge': {'linux': 0.1664, 'windows': 0.2432},
+    't3.2xlarge': {'linux': 0.3328, 'windows': 0.4864},
+
+    # T3a AMD Burstable
+    't3a.nano': {'linux': 0.0047, 'windows': 0.0071},
+    't3a.micro': {'linux': 0.0094, 'windows': 0.0142},
+    't3a.small': {'linux': 0.0188, 'windows': 0.0284},
+    't3a.medium': {'linux': 0.0376, 'windows': 0.0568},
+    't3a.large': {'linux': 0.0752, 'windows': 0.1136},
+    't3a.xlarge': {'linux': 0.1504, 'windows': 0.2272},
+    't3a.2xlarge': {'linux': 0.3008, 'windows': 0.4544},
+
+    # T4g Graviton Burstable (20% cheaper than T3)
+    't4g.nano': {'linux': 0.0042, 'windows': None},  # No Windows on Graviton
+    't4g.micro': {'linux': 0.0084, 'windows': None},
+    't4g.small': {'linux': 0.0168, 'windows': None},
+    't4g.medium': {'linux': 0.0336, 'windows': None},
+    't4g.large': {'linux': 0.0672, 'windows': None},
+    't4g.xlarge': {'linux': 0.1344, 'windows': None},
+    't4g.2xlarge': {'linux': 0.2688, 'windows': None},
+
+    # M5 General Purpose
+    'm5.large': {'linux': 0.096, 'windows': 0.188},
+    'm5.xlarge': {'linux': 0.192, 'windows': 0.376},
+    'm5.2xlarge': {'linux': 0.384, 'windows': 0.752},
+    'm5.4xlarge': {'linux': 0.768, 'windows': 1.504},
+    'm5.8xlarge': {'linux': 1.536, 'windows': 3.008},
+    'm5.12xlarge': {'linux': 2.304, 'windows': 4.512},
+    'm5.16xlarge': {'linux': 3.072, 'windows': 6.016},
+    'm5.24xlarge': {'linux': 4.608, 'windows': 9.024},
+
+    # M5a AMD General Purpose
+    'm5a.large': {'linux': 0.086, 'windows': 0.178},
+    'm5a.xlarge': {'linux': 0.172, 'windows': 0.356},
+    'm5a.2xlarge': {'linux': 0.344, 'windows': 0.712},
+    'm5a.4xlarge': {'linux': 0.688, 'windows': 1.424},
+    'm5a.8xlarge': {'linux': 1.376, 'windows': 2.848},
+    'm5a.12xlarge': {'linux': 2.064, 'windows': 4.272},
+
+    # M6i General Purpose (Current Gen Intel)
+    'm6i.large': {'linux': 0.096, 'windows': 0.188},
+    'm6i.xlarge': {'linux': 0.192, 'windows': 0.376},
+    'm6i.2xlarge': {'linux': 0.384, 'windows': 0.752},
+    'm6i.4xlarge': {'linux': 0.768, 'windows': 1.504},
+    'm6i.8xlarge': {'linux': 1.536, 'windows': 3.008},
+    'm6i.12xlarge': {'linux': 2.304, 'windows': 4.512},
+    'm6i.16xlarge': {'linux': 3.072, 'windows': 6.016},
+    'm6i.24xlarge': {'linux': 4.608, 'windows': 9.024},
+
+    # M6g Graviton General Purpose
+    'm6g.medium': {'linux': 0.0385, 'windows': None},
+    'm6g.large': {'linux': 0.077, 'windows': None},
+    'm6g.xlarge': {'linux': 0.154, 'windows': None},
+    'm6g.2xlarge': {'linux': 0.308, 'windows': None},
+    'm6g.4xlarge': {'linux': 0.616, 'windows': None},
+    'm6g.8xlarge': {'linux': 1.232, 'windows': None},
+    'm6g.12xlarge': {'linux': 1.848, 'windows': None},
+    'm6g.16xlarge': {'linux': 2.464, 'windows': None},
+
+    # M7g Graviton3 General Purpose (Latest)
+    'm7g.medium': {'linux': 0.0408, 'windows': None},
+    'm7g.large': {'linux': 0.0816, 'windows': None},
+    'm7g.xlarge': {'linux': 0.1632, 'windows': None},
+    'm7g.2xlarge': {'linux': 0.3264, 'windows': None},
+    'm7g.4xlarge': {'linux': 0.6528, 'windows': None},
+    'm7g.8xlarge': {'linux': 1.3056, 'windows': None},
+    'm7g.12xlarge': {'linux': 1.9584, 'windows': None},
+    'm7g.16xlarge': {'linux': 2.6112, 'windows': None},
+
+    # C5 Compute Optimized
+    'c5.large': {'linux': 0.085, 'windows': 0.177},
+    'c5.xlarge': {'linux': 0.17, 'windows': 0.354},
+    'c5.2xlarge': {'linux': 0.34, 'windows': 0.708},
+    'c5.4xlarge': {'linux': 0.68, 'windows': 1.416},
+    'c5.9xlarge': {'linux': 1.53, 'windows': 3.186},
+    'c5.12xlarge': {'linux': 2.04, 'windows': 4.248},
+    'c5.18xlarge': {'linux': 3.06, 'windows': 6.372},
+    'c5.24xlarge': {'linux': 4.08, 'windows': 8.496},
+
+    # C6i Compute Optimized (Current Gen Intel)
+    'c6i.large': {'linux': 0.085, 'windows': 0.177},
+    'c6i.xlarge': {'linux': 0.17, 'windows': 0.354},
+    'c6i.2xlarge': {'linux': 0.34, 'windows': 0.708},
+    'c6i.4xlarge': {'linux': 0.68, 'windows': 1.416},
+    'c6i.8xlarge': {'linux': 1.36, 'windows': 2.832},
+    'c6i.12xlarge': {'linux': 2.04, 'windows': 4.248},
+    'c6i.16xlarge': {'linux': 2.72, 'windows': 5.664},
+    'c6i.24xlarge': {'linux': 4.08, 'windows': 8.496},
+
+    # C6g Graviton Compute Optimized
+    'c6g.medium': {'linux': 0.034, 'windows': None},
+    'c6g.large': {'linux': 0.068, 'windows': None},
+    'c6g.xlarge': {'linux': 0.136, 'windows': None},
+    'c6g.2xlarge': {'linux': 0.272, 'windows': None},
+    'c6g.4xlarge': {'linux': 0.544, 'windows': None},
+    'c6g.8xlarge': {'linux': 1.088, 'windows': None},
+    'c6g.12xlarge': {'linux': 1.632, 'windows': None},
+    'c6g.16xlarge': {'linux': 2.176, 'windows': None},
+
+    # C7g Graviton3 Compute Optimized (Latest)
+    'c7g.medium': {'linux': 0.0361, 'windows': None},
+    'c7g.large': {'linux': 0.0723, 'windows': None},
+    'c7g.xlarge': {'linux': 0.1445, 'windows': None},
+    'c7g.2xlarge': {'linux': 0.289, 'windows': None},
+    'c7g.4xlarge': {'linux': 0.578, 'windows': None},
+    'c7g.8xlarge': {'linux': 1.156, 'windows': None},
+    'c7g.12xlarge': {'linux': 1.734, 'windows': None},
+    'c7g.16xlarge': {'linux': 2.312, 'windows': None},
+
+    # R5 Memory Optimized
+    'r5.large': {'linux': 0.126, 'windows': 0.218},
+    'r5.xlarge': {'linux': 0.252, 'windows': 0.436},
+    'r5.2xlarge': {'linux': 0.504, 'windows': 0.872},
+    'r5.4xlarge': {'linux': 1.008, 'windows': 1.744},
+    'r5.8xlarge': {'linux': 2.016, 'windows': 3.488},
+    'r5.12xlarge': {'linux': 3.024, 'windows': 5.232},
+    'r5.16xlarge': {'linux': 4.032, 'windows': 6.976},
+    'r5.24xlarge': {'linux': 6.048, 'windows': 10.464},
+
+    # R6i Memory Optimized (Current Gen Intel)
+    'r6i.large': {'linux': 0.126, 'windows': 0.218},
+    'r6i.xlarge': {'linux': 0.252, 'windows': 0.436},
+    'r6i.2xlarge': {'linux': 0.504, 'windows': 0.872},
+    'r6i.4xlarge': {'linux': 1.008, 'windows': 1.744},
+    'r6i.8xlarge': {'linux': 2.016, 'windows': 3.488},
+    'r6i.12xlarge': {'linux': 3.024, 'windows': 5.232},
+    'r6i.16xlarge': {'linux': 4.032, 'windows': 6.976},
+    'r6i.24xlarge': {'linux': 6.048, 'windows': 10.464},
+
+    # R6g Graviton Memory Optimized
+    'r6g.medium': {'linux': 0.0504, 'windows': None},
+    'r6g.large': {'linux': 0.1008, 'windows': None},
+    'r6g.xlarge': {'linux': 0.2016, 'windows': None},
+    'r6g.2xlarge': {'linux': 0.4032, 'windows': None},
+    'r6g.4xlarge': {'linux': 0.8064, 'windows': None},
+    'r6g.8xlarge': {'linux': 1.6128, 'windows': None},
+    'r6g.12xlarge': {'linux': 2.4192, 'windows': None},
+    'r6g.16xlarge': {'linux': 3.2256, 'windows': None},
+
+    # I3 Storage Optimized
+    'i3.large': {'linux': 0.156, 'windows': 0.248},
+    'i3.xlarge': {'linux': 0.312, 'windows': 0.496},
+    'i3.2xlarge': {'linux': 0.624, 'windows': 0.992},
+    'i3.4xlarge': {'linux': 1.248, 'windows': 1.984},
+    'i3.8xlarge': {'linux': 2.496, 'windows': 3.968},
+    'i3.16xlarge': {'linux': 4.992, 'windows': 7.936},
+
+    # D2 Dense Storage
+    'd2.xlarge': {'linux': 0.69, 'windows': 0.828},
+    'd2.2xlarge': {'linux': 1.38, 'windows': 1.656},
+    'd2.4xlarge': {'linux': 2.76, 'windows': 3.312},
+    'd2.8xlarge': {'linux': 5.52, 'windows': 6.624},
+
+    # X1 Memory Optimized (Very Large)
+    'x1.16xlarge': {'linux': 6.669, 'windows': 9.341},
+    'x1.32xlarge': {'linux': 13.338, 'windows': 18.682},
+
+    # X2idn Memory Optimized (Current Gen)
+    'x2idn.16xlarge': {'linux': 6.669, 'windows': 9.341},
+    'x2idn.24xlarge': {'linux': 10.008, 'windows': 14.016},
+    'x2idn.32xlarge': {'linux': 13.338, 'windows': 18.682},
+
+    # P3 GPU Instances
+    'p3.2xlarge': {'linux': 3.06, 'windows': 3.06},  # Windows same price
+    'p3.8xlarge': {'linux': 12.24, 'windows': 12.24},
+    'p3.16xlarge': {'linux': 24.48, 'windows': 24.48},
+
+    # P4d GPU Instances (Latest)
+    'p4d.24xlarge': {'linux': 32.77, 'windows': 32.77},
+
+    # G4dn GPU Instances (Inference)
+    'g4dn.xlarge': {'linux': 0.526, 'windows': 0.71},
+    'g4dn.2xlarge': {'linux': 0.752, 'windows': 1.028},
+    'g4dn.4xlarge': {'linux': 1.204, 'windows': 1.664},
+    'g4dn.8xlarge': {'linux': 2.176, 'windows': 3.096},
+    'g4dn.12xlarge': {'linux': 3.912, 'windows': 5.292},
+    'g4dn.16xlarge': {'linux': 4.352, 'windows': 6.192},
+
+    # G5 GPU Instances (Latest Inference)
+    'g5.xlarge': {'linux': 1.006, 'windows': 1.282},
+    'g5.2xlarge': {'linux': 1.212, 'windows': 1.58},
+    'g5.4xlarge': {'linux': 1.624, 'windows': 2.176},
+    'g5.8xlarge': {'linux': 2.448, 'windows': 3.368},
+    'g5.12xlarge': {'linux': 5.672, 'windows': 6.96},
+    'g5.16xlarge': {'linux': 4.096, 'windows': 5.936},
+    'g5.24xlarge': {'linux': 8.144, 'windows': 10.704},
+    'g5.48xlarge': {'linux': 16.288, 'windows': 21.408},
+
+    # Inf1 Inference Instances
+    'inf1.xlarge': {'linux': 0.228, 'windows': None},
+    'inf1.2xlarge': {'linux': 0.362, 'windows': None},
+    'inf1.6xlarge': {'linux': 1.18, 'windows': None},
+    'inf1.24xlarge': {'linux': 4.721, 'windows': None},
+}
+
+# EBS Volume Pricing (per GB-month, us-east-1)
+EBS_VOLUME_PRICING = {
+    'gp3': 0.08,
+    'gp2': 0.10,
+    'io1': 0.125,  # Plus IOPS cost
+    'io2': 0.125,  # Plus IOPS cost
+    'st1': 0.045,
+    'sc1': 0.015,
+    'standard': 0.05,
+}
+
+# EBS IOPS Pricing (per IOPS-month)
+EBS_IOPS_PRICING = {
+    'io1': 0.10,
+    'io2': 0.10,
+    'gp3': 0.005,  # Only above 3000 IOPS baseline
+}
+
+
+def _get_ec2_hourly_cost(instance_type: str, platform: str = 'linux') -> float:
+    """
+    Get hourly cost for an EC2 instance type.
+
+    Args:
+        instance_type: EC2 instance type (e.g., 'm5.large')
+        platform: 'linux' or 'windows'
+
+    Returns:
+        Hourly cost in USD, or estimate if type not found
+    """
+    platform_key = 'windows' if platform and 'windows' in platform.lower() else 'linux'
+
+    if instance_type in EC2_INSTANCE_PRICING:
+        pricing = EC2_INSTANCE_PRICING[instance_type]
+        cost = pricing.get(platform_key)
+        if cost is not None:
+            return cost
+        # Graviton instances don't support Windows, fall back to Linux
+        return pricing.get('linux', 0.10)
+
+    # Estimate for unknown instance types based on family and size
+    # Parse instance type (e.g., 'm5.large' -> family='m5', size='large')
+    parts = instance_type.split('.')
+    if len(parts) == 2:
+        family, size = parts
+
+        # Size multipliers (approximate)
+        size_multipliers = {
+            'nano': 0.25, 'micro': 0.5, 'small': 1, 'medium': 2,
+            'large': 4, 'xlarge': 8, '2xlarge': 16, '4xlarge': 32,
+            '8xlarge': 64, '9xlarge': 72, '12xlarge': 96, '16xlarge': 128,
+            '18xlarge': 144, '24xlarge': 192, '32xlarge': 256, '48xlarge': 384,
+        }
+
+        # Base costs per family (for 'large' equivalent)
+        family_base_costs = {
+            't': 0.02, 'm': 0.024, 'c': 0.021, 'r': 0.032,
+            'i': 0.039, 'd': 0.17, 'x': 0.42, 'p': 0.77, 'g': 0.13,
+        }
+
+        family_prefix = family[0] if family else 'm'
+        base_cost = family_base_costs.get(family_prefix, 0.024)
+        multiplier = size_multipliers.get(size, 4) / 4  # Normalize to 'large'
+
+        hourly = base_cost * multiplier
+        if platform_key == 'windows':
+            hourly *= 1.8  # Windows typically ~80% more
+
+        return hourly
+
+    # Default fallback
+    return 0.10 if platform_key == 'linux' else 0.18
+
+
+def _estimate_ebs_cost(volumes: list) -> dict:
+    """
+    Estimate monthly EBS cost for a list of volumes.
+
+    Args:
+        volumes: List of volume dicts with 'size_gb', 'volume_type', 'iops'
+
+    Returns:
+        Dict with storage_cost, iops_cost, total_cost
+    """
+    storage_cost = 0.0
+    iops_cost = 0.0
+
+    for vol in volumes:
+        size = vol.get('size_gb', 0)
+        vol_type = vol.get('volume_type', 'gp2')
+        iops = vol.get('iops', 0)
+
+        # Storage cost
+        rate = EBS_VOLUME_PRICING.get(vol_type, 0.10)
+        storage_cost += size * rate
+
+        # IOPS cost (io1, io2, and gp3 above baseline)
+        if vol_type in ('io1', 'io2') and iops > 0:
+            iops_cost += iops * EBS_IOPS_PRICING.get(vol_type, 0.10)
+        elif vol_type == 'gp3' and iops > 3000:
+            iops_cost += (iops - 3000) * EBS_IOPS_PRICING['gp3']
+
+    return {
+        'storage_cost': round(storage_cost, 2),
+        'iops_cost': round(iops_cost, 2),
+        'total_cost': round(storage_cost + iops_cost, 2),
+    }
 
 
 @tool
@@ -825,25 +1160,22 @@ def _get_instance_metrics(instance_id: str, aws_client: AWSClient) -> Dict[str, 
 
 @tool
 def _estimate_instance_cost(instance_details: Dict, volumes: List[Dict]) -> Dict[str, Any]:
-    """Estimate monthly cost for an instance (rough estimates)."""
-    # Very rough cost estimates - actual prices vary by region
+    """
+    Estimate monthly cost for an instance using comprehensive pricing data.
+
+    Args:
+        instance_details: Dict with instance_type, state, platform keys
+        volumes: List of volume dicts with size_gb, volume_type, iops keys
+
+    Returns:
+        Dict with monthly_cost, instance_cost, storage_cost, hourly_rate, and notes
+    """
     instance_type = instance_details.get('instance_type', '')
     state = instance_details.get('state', '')
+    platform = instance_details.get('platform', 'linux')
 
-    # Instance costs (simplified, US East pricing)
-    hourly_cost = 0.0
-
-    if instance_type.startswith('t2.'):
-        cost_map = {'t2.nano': 0.0058, 't2.micro': 0.0116, 't2.small': 0.023, 't2.medium': 0.0464, 't2.large': 0.0928}
-        hourly_cost = cost_map.get(instance_type, 0.05)
-    elif instance_type.startswith('t3.'):
-        cost_map = {'t3.nano': 0.0052, 't3.micro': 0.0104, 't3.small': 0.0208, 't3.medium': 0.0416, 't3.large': 0.0832}
-        hourly_cost = cost_map.get(instance_type, 0.05)
-    elif instance_type.startswith('m5.'):
-        cost_map = {'m5.large': 0.096, 'm5.xlarge': 0.192, 'm5.2xlarge': 0.384}
-        hourly_cost = cost_map.get(instance_type, 0.10)
-    else:
-        hourly_cost = 0.10  # Default estimate
+    # Get hourly cost using comprehensive pricing table
+    hourly_cost = _get_ec2_hourly_cost(instance_type, platform)
 
     monthly_instance_cost = hourly_cost * 730  # 730 hours/month average
 
@@ -851,18 +1183,23 @@ def _estimate_instance_cost(instance_details: Dict, volumes: List[Dict]) -> Dict
     if state != 'running':
         monthly_instance_cost = 0.0
 
-    # Volume costs
-    volume_cost = 0.0
-    for vol in volumes:
-        size = vol.get('size_gb', 0)
-        volume_cost += size * 0.10  # $0.10/GB for gp2
+    # Volume costs using actual volume types and IOPS
+    ebs_costs = _estimate_ebs_cost(volumes)
+
+    platform_note = 'Windows' if platform and 'windows' in platform.lower() else 'Linux'
+    is_known_type = instance_type in EC2_INSTANCE_PRICING
 
     return {
-        "monthly_cost": round(monthly_instance_cost + volume_cost, 2),
+        "monthly_cost": round(monthly_instance_cost + ebs_costs['total_cost'], 2),
         "instance_cost": round(monthly_instance_cost, 2),
-        "storage_cost": round(volume_cost, 2),
-        "hourly_rate": hourly_cost,
-        "note": "Estimates based on US East pricing, actual costs may vary"
+        "storage_cost": ebs_costs['storage_cost'],
+        "iops_cost": ebs_costs['iops_cost'],
+        "hourly_rate": round(hourly_cost, 4),
+        "platform": platform_note,
+        "pricing_accuracy": "known" if is_known_type else "estimated",
+        "note": f"On-demand {platform_note} pricing (us-east-1). "
+                f"{'Exact pricing from database.' if is_known_type else 'Estimated from similar types.'} "
+                "Reserved/Savings Plans can reduce costs 30-72%."
     }
 
 

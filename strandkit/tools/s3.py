@@ -3,6 +3,15 @@ S3 & Storage Visibility Tools
 
 This module provides tools for analyzing S3 buckets, detecting security risks,
 and optimizing storage costs.
+
+PRICING NOTES:
+- S3 pricing has multiple components: storage, requests, data transfer, retrieval
+- Storage costs vary by class: Standard $0.023/GB, IA $0.0125/GB, Glacier $0.004/GB
+- Request costs can be significant for high-traffic buckets (PUT $0.005/1000, GET $0.0004/1000)
+- Data transfer out to internet: $0.09/GB (first 10TB)
+- Glacier retrieval fees: $0.01-0.03/GB depending on speed
+- All estimates are for us-east-1; other regions may vary 10-20%
+- Use AWS Pricing Calculator for accurate quotes
 """
 
 from datetime import datetime, timedelta
@@ -681,25 +690,76 @@ def _analyze_bucket_configuration(s3_client, bucket_name: str) -> Dict[str, Any]
     return config
 
 
+# S3 Storage Pricing (per GB-month, us-east-1)
+S3_STORAGE_PRICING = {
+    'STANDARD': 0.023,  # First 50TB
+    'STANDARD_IA': 0.0125,
+    'ONEZONE_IA': 0.01,
+    'INTELLIGENT_TIERING': 0.023,  # Frequent Access tier
+    'GLACIER': 0.004,  # Glacier Flexible Retrieval
+    'GLACIER_IR': 0.004,  # Glacier Instant Retrieval
+    'DEEP_ARCHIVE': 0.00099
+}
+
+# S3 Request Pricing (per 1000 requests, us-east-1)
+S3_REQUEST_PRICING = {
+    'STANDARD': {'PUT': 0.005, 'GET': 0.0004},
+    'STANDARD_IA': {'PUT': 0.01, 'GET': 0.001},
+    'ONEZONE_IA': {'PUT': 0.01, 'GET': 0.001},
+    'INTELLIGENT_TIERING': {'PUT': 0.005, 'GET': 0.0004},
+    'GLACIER': {'PUT': 0.03, 'GET': 0.0004},  # Retrieval requests extra
+    'DEEP_ARCHIVE': {'PUT': 0.05, 'GET': 0.0004},
+}
+
+
 @tool
 def _estimate_bucket_cost(storage: Dict[str, Any]) -> Dict[str, Any]:
-    """Estimate monthly bucket cost (rough estimates)."""
-    # Simplified pricing (US East)
-    pricing = {
-        'STANDARD': 0.023,  # per GB
-        'STANDARD_IA': 0.0125,
-        'ONEZONE_IA': 0.01,
-        'INTELLIGENT_TIERING': 0.023,
-        'GLACIER': 0.004,
-        'DEEP_ARCHIVE': 0.00099
-    }
+    """
+    Estimate monthly bucket cost.
 
-    total_cost = storage['total_size_gb'] * pricing.get('STANDARD', 0.023)
+    Note: This estimates storage costs only. Request costs, data transfer,
+    and retrieval fees can significantly increase total costs for active buckets.
+    """
+    total_size_gb = storage.get('total_size_gb', 0)
+    storage_classes = storage.get('storage_classes', {})
+
+    # Calculate cost by storage class if available
+    storage_cost = 0.0
+    cost_breakdown = {}
+
+    if storage_classes:
+        for storage_class, count in storage_classes.items():
+            # Estimate GB per object (rough - assumes uniform distribution)
+            if storage.get('object_count', 0) > 0:
+                class_gb = total_size_gb * (count / storage['object_count'])
+            else:
+                class_gb = 0
+            rate = S3_STORAGE_PRICING.get(storage_class, 0.023)
+            class_cost = class_gb * rate
+            storage_cost += class_cost
+            if class_cost > 0:
+                cost_breakdown[storage_class] = round(class_cost, 2)
+    else:
+        # Default to Standard pricing
+        storage_cost = total_size_gb * S3_STORAGE_PRICING['STANDARD']
+
+    # Estimate request costs (very rough - assumes moderate activity)
+    # This is a placeholder; real costs depend on actual request patterns
+    estimated_request_cost = 0.0
+    object_count = storage.get('object_count', 0)
+    if object_count > 1000:
+        # Assume ~1000 GET requests per 1000 objects per month (very rough)
+        estimated_request_cost = (object_count / 1000) * S3_REQUEST_PRICING['STANDARD']['GET']
 
     return {
-        "monthly_cost": round(total_cost, 2),
-        "storage_gb": storage['total_size_gb'],
-        "note": "Estimates based on US East pricing"
+        "monthly_storage_cost": round(storage_cost, 2),
+        "estimated_request_cost": round(estimated_request_cost, 2),
+        "monthly_cost": round(storage_cost + estimated_request_cost, 2),
+        "storage_gb": total_size_gb,
+        "cost_by_class": cost_breakdown if cost_breakdown else None,
+        "note": "Storage cost estimate (us-east-1). Request costs, data transfer, "
+                "and Glacier retrieval fees not fully included. "
+                "High-traffic buckets may have significant additional request costs."
     }
 
 
