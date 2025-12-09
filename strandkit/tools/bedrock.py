@@ -335,7 +335,7 @@ def list_available_models(
                 'output_modalities': model.get('outputModalities', []),
                 'customizations_supported': model.get('customizationsSupported', []),
                 'inference_types': model.get('inferenceTypesSupported', []),
-                'response_streaming': 'STREAMING' in model.get('responseStreamingSupported', [])
+                'response_streaming': model.get('responseStreamingSupported', False)
             }
 
             models.append(model_info)
@@ -443,7 +443,7 @@ def get_model_details(
         capabilities = {
             'input_modalities': model_details.get('inputModalities', []),
             'output_modalities': model_details.get('outputModalities', []),
-            'response_streaming': 'STREAMING' in model_details.get('responseStreamingSupported', []),
+            'response_streaming': model_details.get('responseStreamingSupported', False),
             'customizations_supported': model_details.get('customizationsSupported', []),
             'inference_types': model_details.get('inferenceTypesSupported', [])
         }
