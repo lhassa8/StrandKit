@@ -112,19 +112,21 @@ RDS_INSTANCE_PRICING = {
 }
 
 # Storage pricing per GB-month
+# Note: RDS gp2 and gp3 are the SAME price ($0.115), unlike EBS where gp3 is cheaper
 RDS_STORAGE_PRICING = {
     'gp2': 0.115,
-    'gp3': 0.08,
+    'gp3': 0.115,  # Same as gp2 for RDS (different from EBS!)
     'io1': 0.125,  # Plus IOPS cost
     'io2': 0.125,  # Plus IOPS cost (same as io1)
     'magnetic': 0.10,  # Legacy standard storage
 }
 
 # IOPS pricing per provisioned IOPS-month (for io1/io2)
+# Note: RDS gp3 IOPS pricing ($0.02) differs from EBS gp3 ($0.005)
 RDS_IOPS_PRICING = {
     'io1': 0.10,
     'io2': 0.10,  # Same as io1
-    'gp3': 0.005,  # Only for IOPS above baseline 3000
+    'gp3': 0.02,  # Only for IOPS above baseline 3000 (RDS rate, not EBS rate)
 }
 
 # Backup storage pricing (beyond free allocation)
@@ -513,19 +515,14 @@ def analyze_rds_instance(
             })
 
         # Storage type recommendations
+        # Note: RDS gp2 and gp3 have the same storage price ($0.115/GB), but gp3 offers
+        # better baseline performance (3000 IOPS vs scaled IOPS for gp2)
         if config['storage_type'] == 'gp2':
-            gp2_rate = RDS_STORAGE_PRICING['gp2']
-            gp3_rate = RDS_STORAGE_PRICING['gp3']
-            storage_gb = config['allocated_storage_gb']
-            savings = (gp2_rate - gp3_rate) * storage_gb
-            if config['multi_az']:
-                savings *= 2  # Multi-AZ doubles storage cost
             recommendations.append({
-                'type': 'cost',
-                'priority': 'medium',
-                'recommendation': 'Migrate from gp2 to gp3 storage for cost savings',
-                'potential_savings': f'${savings:.2f}/month',
-                'details': f'gp2: ${gp2_rate}/GB vs gp3: ${gp3_rate}/GB ({storage_gb} GB)'
+                'type': 'performance',
+                'priority': 'low',
+                'recommendation': 'Consider migrating from gp2 to gp3 for better baseline performance',
+                'details': 'gp3 provides 3000 IOPS baseline vs gp2 scaled IOPS. Same storage cost ($0.115/GB).'
             })
 
         # Multi-AZ recommendation
@@ -1055,25 +1052,17 @@ def get_rds_recommendations(
                     })
 
             # Storage optimization (gp2 to gp3)
+            # Note: RDS gp2 and gp3 have the same price, but gp3 has better baseline performance
             if storage_type == 'gp2':
-                gp2_rate = RDS_STORAGE_PRICING['gp2']
-                gp3_rate = RDS_STORAGE_PRICING['gp3']
-                storage_savings = allocated_storage * (gp2_rate - gp3_rate)
-                if multi_az:
-                    storage_savings *= 2  # Multi-AZ doubles storage cost
-
-                total_potential_savings += storage_savings
-
                 recommendations.append({
                     'db_instance': db_id,
-                    'type': 'storage',
-                    'priority': 'medium',
+                    'type': 'performance',
+                    'priority': 'low',
                     'current_storage': f'{storage_type} ({allocated_storage} GB)',
                     'recommended_storage': 'gp3',
-                    'monthly_savings': round(storage_savings, 2),
-                    'annual_savings': round(storage_savings * 12, 2),
-                    'recommendation': f'Migrate {allocated_storage} GB from gp2 to gp3 storage',
-                    'details': f'gp2: ${gp2_rate}/GB vs gp3: ${gp3_rate}/GB',
+                    'monthly_savings': 0,  # Same price for RDS
+                    'recommendation': f'Consider migrating {allocated_storage} GB from gp2 to gp3',
+                    'details': 'gp3 provides 3000 IOPS baseline. Same storage cost ($0.115/GB).',
                     'risk': 'low',
                     'effort': 'low'
                 })
