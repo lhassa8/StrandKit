@@ -20,7 +20,7 @@ from typing import List, Any
 
 def get_all_tools() -> List[Any]:
     """
-    Get all 78 StrandKit tools as @tool-decorated functions.
+    Get all 86 StrandKit tools as @tool-decorated functions.
 
     Returns list of functions ready to pass to Strands Agent.
 
@@ -34,7 +34,7 @@ def get_all_tools() -> List[Any]:
         )
 
     Returns:
-        List of 78 @tool-decorated functions organized by category:
+        List of 86 @tool-decorated functions organized by category:
         - Orchestrators: 4 tools (high-level)
         - CloudWatch: 4 tools
         - CloudFormation: 1 tool
@@ -51,6 +51,7 @@ def get_all_tools() -> List[Any]:
         - RDS: 5 tools
         - VPC: 5 tools
         - Bedrock: 6 tools
+        - Trusted Advisor: 8 tools
     """
     # Import all tool modules
     from strandkit.tools import (
@@ -65,7 +66,9 @@ def get_all_tools() -> List[Any]:
         # AI/ML
         bedrock,
         # Orchestrator module
-        orchestrators
+        orchestrators,
+        # Trusted Advisor-style checks
+        trusted_advisor
     )
 
     return [
@@ -178,6 +181,16 @@ def get_all_tools() -> List[Any]:
         bedrock.analyze_model_performance,
         bedrock.compare_models,
         bedrock.get_model_invocation_logs,
+
+        # Trusted Advisor (8 tools)
+        trusted_advisor.check_cloudtrail_logging,
+        trusted_advisor.check_vpc_flow_logs,
+        trusted_advisor.check_config_status,
+        trusted_advisor.check_certificate_expiration,
+        trusted_advisor.check_lambda_runtimes,
+        trusted_advisor.check_stopped_ec2_instances,
+        trusted_advisor.check_s3_incomplete_uploads,
+        trusted_advisor.run_all_trusted_advisor_checks,
     ]
 
 
@@ -203,6 +216,7 @@ def get_tools_by_category(category: str) -> List[Any]:
             - 'rds': RDS database analysis (5 tools)
             - 'vpc': VPC networking analysis (5 tools)
             - 'bedrock': Bedrock AI/ML models (6 tools)
+            - 'trusted_advisor': Trusted Advisor-style checks (8 tools)
 
     Returns:
         List of @tool-decorated functions for the category
@@ -382,6 +396,19 @@ def get_tools_by_category(category: str) -> List[Any]:
             bedrock.get_model_invocation_logs,
         ]
 
+    elif category == 'trusted_advisor':
+        from strandkit.tools import trusted_advisor
+        return [
+            trusted_advisor.check_cloudtrail_logging,
+            trusted_advisor.check_vpc_flow_logs,
+            trusted_advisor.check_config_status,
+            trusted_advisor.check_certificate_expiration,
+            trusted_advisor.check_lambda_runtimes,
+            trusted_advisor.check_stopped_ec2_instances,
+            trusted_advisor.check_s3_incomplete_uploads,
+            trusted_advisor.run_all_trusted_advisor_checks,
+        ]
+
     else:
         return []
 
@@ -416,4 +443,5 @@ def list_tool_categories() -> List[str]:
         'rds',
         'vpc',
         'bedrock',
+        'trusted_advisor',
     ]

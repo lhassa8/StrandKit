@@ -207,6 +207,15 @@ __all__ = [
     "analyze_model_performance",
     "compare_models",
     "get_model_invocation_logs",
+    # Trusted Advisor-style checks
+    "check_cloudtrail_logging",
+    "check_vpc_flow_logs",
+    "check_config_status",
+    "check_certificate_expiration",
+    "check_lambda_runtimes",
+    "check_stopped_ec2_instances",
+    "check_s3_incomplete_uploads",
+    "run_all_trusted_advisor_checks",
 ]
 from strandkit.tools.s3_advanced import (
     analyze_s3_storage_classes,
@@ -222,4 +231,14 @@ from strandkit.tools.ec2_advanced import (
     analyze_auto_scaling_groups,
     analyze_load_balancers,
     get_ec2_spot_recommendations
+)
+from strandkit.tools.trusted_advisor import (
+    check_cloudtrail_logging,
+    check_vpc_flow_logs,
+    check_config_status,
+    check_certificate_expiration,
+    check_lambda_runtimes,
+    check_stopped_ec2_instances,
+    check_s3_incomplete_uploads,
+    run_all_trusted_advisor_checks
 )
