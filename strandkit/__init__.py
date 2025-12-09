@@ -14,11 +14,11 @@ Example usage:
     >>> response = agent.run("Why are errors spiking in the auth service?")
     >>> print(response)
 
-For more information, see: https://github.com/yourusername/strandkit
+For more information, see: https://github.com/lhassa8/StrandKit
 """
 
-__version__ = "2.3.0"
-__author__ = "Your Name"
+__version__ = "2.4.0"
+__author__ = "StrandKit Contributors"
 
 # Import main agent templates for easy access
 from strandkit.agents.infra_debugger import InfraDebuggerAgent

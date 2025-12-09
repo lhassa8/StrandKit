@@ -1,8 +1,8 @@
 # StrandKit Quick Start Guide
 
-**Version 2.0.0** - AWS Companion SDK for Strands Agents
+**Version 2.4.0** - AWS Companion SDK for Strands Agents
 
-StrandKit provides 60 AWS tools designed to work seamlessly with [AWS Strands Agents](https://strandsagents.com/). Build powerful AI agents that can monitor, analyze, and optimize your AWS infrastructure.
+StrandKit provides 86 AWS tools designed to work seamlessly with [AWS Strands Agents](https://strandsagents.com/). Build powerful AI agents that can monitor, analyze, and optimize your AWS infrastructure.
 
 ## Installation
 
@@ -13,7 +13,7 @@ pip install strands-agents strandkit boto3
 Or for development:
 
 ```bash
-git clone https://github.com/yourusername/StrandKit.git
+git clone https://github.com/lhassa8/StrandKit.git
 cd StrandKit
 pip install -e .
 ```
@@ -34,10 +34,11 @@ pip install -e .
 
 ## What's Included
 
-StrandKit provides **60 tools** across **12 categories**:
+StrandKit provides **86 tools** across **17 categories**:
 
 | Category | Tools | Purpose |
 |----------|-------|---------|
+| **Orchestrators** | 4 | High-level composite tools |
 | **CloudWatch** | 4 | Logs, metrics, insights queries |
 | **CloudFormation** | 1 | Changeset analysis |
 | **IAM** | 3 | Role/policy analysis |
@@ -50,6 +51,10 @@ StrandKit provides **60 tools** across **12 categories**:
 | **S3** | 5 | Bucket analysis, security |
 | **S3 Advanced** | 7 | Storage optimization, lifecycle |
 | **EBS** | 6 | Volume optimization, encryption |
+| **RDS** | 5 | Database analysis, backups |
+| **VPC** | 5 | Networking, NAT gateways |
+| **Bedrock** | 6 | AI/ML model analysis |
+| **Trusted Advisor** | 8 | AWS best practice checks |
 
 See [TOOLS.md](TOOLS.md) for complete API reference.
 
@@ -59,7 +64,7 @@ See [TOOLS.md](TOOLS.md) for complete API reference.
 
 ### 1. With Strands Agents (Recommended)
 
-Use all 60 tools with AWS Strands Agents framework:
+Use all 86 tools with AWS Strands Agents framework:
 
 ```python
 from strands import Agent

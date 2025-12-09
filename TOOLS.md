@@ -1,6 +1,6 @@
 # StrandKit Tools Reference
 
-Complete API reference for all **78 AWS tools** in StrandKit v2.3.0.
+Complete API reference for all **86 AWS tools** in StrandKit v2.4.0.
 
 All tools are decorated with `@tool` for AWS Strands Agents integration and can also be used standalone.
 
@@ -11,7 +11,7 @@ All tools are decorated with `@tool` for AWS Strands Agents integration and can 
 ### Recommended for Agents
 - [**Orchestrators (4 tools)**](#orchestrator-tools) - High-level tools for common agent tasks
 
-### Granular Tools (74 tools)
+### Granular Tools (82 tools)
 - [CloudWatch (4 tools)](#cloudwatch-tools)
 - [CloudFormation (1 tool)](#cloudformation-tools)
 - [IAM (3 tools)](#iam-tools)
@@ -24,9 +24,10 @@ All tools are decorated with `@tool` for AWS Strands Agents integration and can 
 - [S3 (5 tools)](#s3-tools)
 - [S3 Advanced (7 tools)](#s3-advanced-tools)
 - [EBS (6 tools)](#ebs-tools)
-- [RDS (5 tools)](#rds-tools) - NEW in v2.2.0
-- [VPC (5 tools)](#vpc-tools) - NEW in v2.2.0
-- [Bedrock (6 tools)](#bedrock-tools) - NEW in v2.3.0
+- [RDS (5 tools)](#rds-tools)
+- [VPC (5 tools)](#vpc-tools)
+- [Bedrock (6 tools)](#bedrock-tools)
+- [Trusted Advisor (8 tools)](#trusted-advisor-tools) - NEW in v2.4.0
 
 ---
 
@@ -1473,6 +1474,128 @@ logs = get_model_invocation_logs(
 
 ---
 
+## Trusted Advisor Tools
+
+**AWS Trusted Advisor-style checks that work without Business/Enterprise Support.** These 8 tools replicate common Trusted Advisor checks using standard AWS APIs.
+
+### check_cloudtrail_logging()
+
+Check if CloudTrail is enabled and properly configured.
+
+```python
+from strandkit import check_cloudtrail_logging
+
+result = check_cloudtrail_logging()
+print(f"CloudTrail enabled: {result['cloudtrail_enabled']}")
+```
+
+**Returns:** Trail status, multi-region logging, log validation, recent activity.
+
+### check_vpc_flow_logs()
+
+Check if all VPCs have Flow Logs enabled.
+
+```python
+from strandkit import check_vpc_flow_logs
+
+result = check_vpc_flow_logs()
+for vpc in result['vpcs_without_flow_logs']:
+    print(f"VPC {vpc} missing Flow Logs")
+```
+
+**Returns:** VPCs with/without Flow Logs, compliance percentage, recommendations.
+
+### check_config_status()
+
+Check if AWS Config is enabled and recording.
+
+```python
+from strandkit import check_config_status
+
+result = check_config_status()
+print(f"Config recording: {result['config_recording']}")
+```
+
+**Returns:** Config recorder status, delivery channel status, compliance status.
+
+### check_certificate_expiration()
+
+Find ACM certificates expiring within 30 days.
+
+```python
+from strandkit import check_certificate_expiration
+
+result = check_certificate_expiration(days_threshold=30)
+for cert in result['expiring_certificates']:
+    print(f"{cert['domain']} expires in {cert['days_until_expiration']} days")
+```
+
+**Parameters:**
+- `days_threshold` (int): Days before expiration to flag (default: 30)
+
+**Returns:** Expiring certificates, expired certificates, healthy certificates count.
+
+### check_lambda_runtimes()
+
+Find Lambda functions using deprecated or end-of-life runtimes.
+
+```python
+from strandkit import check_lambda_runtimes
+
+result = check_lambda_runtimes()
+for func in result['deprecated_runtime_functions']:
+    print(f"{func['function_name']} uses {func['runtime']}")
+```
+
+**Returns:** Functions by runtime, deprecated runtime functions, EOL dates, upgrade recommendations.
+
+### check_stopped_ec2_instances()
+
+Find EC2 instances that have been stopped for over 30 days.
+
+```python
+from strandkit import check_stopped_ec2_instances
+
+result = check_stopped_ec2_instances(days_threshold=30)
+for instance in result['stopped_instances']:
+    print(f"{instance['instance_id']} stopped for {instance['days_stopped']} days")
+```
+
+**Parameters:**
+- `days_threshold` (int): Days stopped to flag (default: 30)
+
+**Returns:** Long-stopped instances, estimated monthly waste, recommendations.
+
+### check_s3_incomplete_uploads()
+
+Find S3 buckets without lifecycle rules to abort incomplete multipart uploads.
+
+```python
+from strandkit import check_s3_incomplete_uploads
+
+result = check_s3_incomplete_uploads()
+for bucket in result['buckets_without_abort_rules']:
+    print(f"Bucket {bucket} needs abort incomplete uploads rule")
+```
+
+**Returns:** Buckets missing abort rules, buckets with rules, recommendations.
+
+### run_all_trusted_advisor_checks()
+
+Run all Trusted Advisor-style checks and return a consolidated report.
+
+```python
+from strandkit import run_all_trusted_advisor_checks
+
+report = run_all_trusted_advisor_checks()
+print(f"Total issues: {report['summary']['total_issues']}")
+print(f"Critical: {report['summary']['critical']}")
+```
+
+**Returns:** Consolidated report with all check results, summary by severity, top recommendations.
+
+---
+
 ## Usage Patterns
 
 ### With Strands Agents
@@ -1536,9 +1659,10 @@ costs = get_cost_by_service(days_back=30, aws_client=aws)
 | `s3` | 5 | S3 bucket analysis |
 | `s3_advanced` | 7 | S3 optimization |
 | `ebs` | 6 | EBS volume optimization |
-| `rds` | 5 | RDS database analysis (NEW v2.2.0) |
-| `vpc` | 5 | VPC networking analysis (NEW v2.2.0) |
-| `bedrock` | 6 | Bedrock AI/ML models (NEW v2.3.0) |
+| `rds` | 5 | RDS database analysis |
+| `vpc` | 5 | VPC networking analysis |
+| `bedrock` | 6 | Bedrock AI/ML models |
+| `trusted_advisor` | 8 | Trusted Advisor-style checks |
 
 ---
 
@@ -1588,4 +1712,4 @@ See the [examples](examples/) directory:
 
 ---
 
-**StrandKit v2.3.0** - 78 AWS tools for building AI agents
+**StrandKit v2.4.0** - 86 AWS tools for building AI agents

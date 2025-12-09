@@ -22,7 +22,7 @@
 
 ## Overview
 
-StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.com/)** that provides **78 production-ready AWS tools** for:
+StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.com/)** that provides **86 production-ready AWS tools** for:
 
 - 💰 **Cost optimization** - Find waste, analyze spending, get rightsizing recommendations
 - 🔒 **Security auditing** - Scan IAM policies, detect misconfigurations, enforce compliance
@@ -32,7 +32,7 @@ StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.co
 
 **Perfect for AWS Strands Agents:**
 - **Orchestrator tools** - 4 high-level tools designed for common agent tasks (security audit, cost optimization, diagnostics)
-- **Drop-in ready** - All 78 tools work seamlessly with Strands agents via `get_all_tools()`
+- **Drop-in ready** - All 86 tools work seamlessly with Strands agents via `get_all_tools()`
 - **Auto-generated schemas** - Tool definitions automatically converted to Strands-compatible format
 - **Category organization** - Filter by orchestrators, IAM, EC2, S3, Cost, CloudWatch for specialized agents
 - **Production-tested** - All tools validated with real AWS accounts, handles edge cases gracefully
@@ -52,7 +52,7 @@ StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.co
 
 ## Why StrandKit?
 
-**StrandKit supercharges AWS Strands Agents with 78 production-ready AWS tools** (4 orchestrators + 74 granular).
+**StrandKit supercharges AWS Strands Agents with 86 production-ready AWS tools** (4 orchestrators + 82 granular).
 
 ### Strands Gives You the Framework, StrandKit Gives You the Tools
 
@@ -95,7 +95,7 @@ response = agent("Find ways to reduce my AWS bill")
 - ✅ **@tool decorator** - Every function has Strands `@tool` decorator for instant integration
 - ✅ **Auto-schemas** - Tool schemas automatically generated for Strands agents
 - ✅ **Category filtering** - Load only the tools you need (orchestrators, IAM, Cost, EC2, S3, RDS, VPC, Bedrock, etc.)
-- ✅ **Production-ready** - All 78 tools tested with real AWS accounts
+- ✅ **Production-ready** - All 86 tools tested with real AWS accounts
 - ✅ **Actionable output** - Every tool returns recommendations, not just raw data
 - ✅ **Standalone compatible** - Also works without Strands for scripting
 
@@ -138,9 +138,9 @@ response = agent("Find cost savings")
 
 ---
 
-**Using all 74 granular tools (advanced):**
+**Using all 82 granular tools (advanced):**
 
-Use StrandKit's 74 granular tools when you need fine-grained control:
+Use StrandKit's 82 granular tools when you need fine-grained control:
 
 ```python
 from strands import Agent
