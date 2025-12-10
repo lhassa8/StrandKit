@@ -22,7 +22,7 @@
 
 ## Overview
 
-StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.com/)** that provides **86 production-ready AWS tools** for:
+StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.com/)** that provides **103 production-ready AWS tools** for:
 
 - 💰 **Cost optimization** - Find waste, analyze spending, get rightsizing recommendations
 - 🔒 **Security auditing** - Scan IAM policies, detect misconfigurations, enforce compliance
@@ -32,9 +32,9 @@ StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.co
 
 **Perfect for AWS Strands Agents:**
 - **Orchestrator tools** - 4 high-level tools designed for common agent tasks (security audit, cost optimization, diagnostics)
-- **Drop-in ready** - All 86 tools work seamlessly with Strands agents via `get_all_tools()`
+- **Drop-in ready** - All 103 tools work seamlessly with Strands agents via `get_all_tools()`
 - **Auto-generated schemas** - Tool definitions automatically converted to Strands-compatible format
-- **Category organization** - Filter by orchestrators, IAM, EC2, S3, Cost, CloudWatch for specialized agents
+- **Category organization** - Filter by orchestrators, IAM, EC2, S3, Cost, CloudWatch, Bedrock for specialized agents
 - **Production-tested** - All tools validated with real AWS accounts, handles edge cases gracefully
 - **Actionable insights** - Every tool provides recommendations, not just raw data
 
@@ -52,7 +52,7 @@ StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.co
 
 ## Why StrandKit?
 
-**StrandKit supercharges AWS Strands Agents with 86 production-ready AWS tools** (4 orchestrators + 82 granular).
+**StrandKit supercharges AWS Strands Agents with 103 production-ready AWS tools** (4 orchestrators + 99 granular).
 
 ### Strands Gives You the Framework, StrandKit Gives You the Tools
 
@@ -94,8 +94,8 @@ response = agent("Find ways to reduce my AWS bill")
 - ✅ **Orchestrator tools** - 4 high-level tools designed for common agent tasks
 - ✅ **@tool decorator** - Every function has Strands `@tool` decorator for instant integration
 - ✅ **Auto-schemas** - Tool schemas automatically generated for Strands agents
-- ✅ **Category filtering** - Load only the tools you need (orchestrators, IAM, Cost, EC2, S3, RDS, VPC, Bedrock, etc.)
-- ✅ **Production-ready** - All 86 tools tested with real AWS accounts
+- ✅ **Category filtering** - Load only the tools you need (orchestrators, IAM, Cost, EC2, S3, RDS, VPC, Bedrock, Trusted Advisor, etc.)
+- ✅ **Production-ready** - All 103 tools tested with real AWS accounts
 - ✅ **Actionable output** - Every tool returns recommendations, not just raw data
 - ✅ **Standalone compatible** - Also works without Strands for scripting
 
@@ -128,7 +128,7 @@ response = agent("Find cost savings")
 - ✅ **Clear purpose** - 4 tools vs 60 reduces agent confusion
 - ✅ **Better results** - Designed for what agents actually need to do
 - ✅ **Comprehensive** - Each orchestrator uses multiple granular tools
-- ✅ **Scales to 100+ tools** - As we add more tools, orchestrators hide complexity
+- ✅ **Scales with complexity** - 103 tools organized by orchestrators that hide complexity
 
 **The 4 Orchestrator Tools:**
 1. `audit_security()` - Comprehensive security audit (IAM, S3, EC2)
@@ -138,9 +138,9 @@ response = agent("Find cost savings")
 
 ---
 
-**Using all 82 granular tools (advanced):**
+**Using all 99 granular tools (advanced):**
 
-Use StrandKit's 82 granular tools when you need fine-grained control:
+Use StrandKit's 99 granular tools when you need fine-grained control:
 
 ```python
 from strands import Agent
@@ -149,7 +149,7 @@ from strandkit.strands import get_all_tools
 # Create agent with all granular tools
 agent = Agent(
     name="aws-analyst",
-    tools=get_all_tools(),  # 74 AWS granular tools ready to use
+    tools=get_all_tools(),  # 103 AWS tools ready to use
     model="anthropic.claude-haiku-4-5-20251001-v1:0"
 )
 
@@ -256,12 +256,13 @@ result = agent.run("Why is my Lambda function failing?")
 | Feature | AWS Strands Agents | StrandKit Adds |
 |---------|-------------------|----------------|
 | **Agent Framework** | ✅ Multi-agent orchestration | N/A (uses Strands) |
-| **AWS Tools** | ❌ You write them | ✅ 60 production-ready tools |
+| **AWS Tools** | ❌ You write them | ✅ 103 production-ready tools |
 | **Tool Schemas** | ✅ Tool definition format | ✅ Auto-generated for all tools |
 | **IAM Security** | ❌ Build yourself | ✅ 11 security audit tools |
 | **Cost Optimization** | ❌ Build yourself | ✅ 15 cost analysis tools |
-| **EC2 Analysis** | ❌ Build yourself | ✅ 10 compute tools |
-| **S3 Management** | ❌ Build yourself | ✅ 12 storage tools |
+| **EC2 Analysis** | ❌ Build yourself | ✅ 9 compute tools |
+| **S3 Management** | ❌ Build yourself | ✅ 22 storage tools |
+| **Bedrock AI/ML** | ❌ Build yourself | ✅ 13 AI/ML tools |
 | **CloudWatch** | ❌ Build yourself | ✅ 4 monitoring tools |
 
 **StrandKit = AWS tools for Strands**
@@ -288,6 +289,14 @@ result = agent.run("Why is my Lambda function failing?")
 ## Features
 
 ### AWS Tools (Production Ready ✅)
+
+#### Orchestrator Tools (High-Level - Recommended for Agents)
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`audit_security`** | Comprehensive security audit (IAM + S3 + EC2) in one call | ✅ Working |
+| **`optimize_costs`** | Find all cost savings (zombies, idle, snapshots, storage) | ✅ Working |
+| **`diagnose_issue`** | Smart troubleshooting for Lambda, EC2, RDS, S3 issues | ✅ Working |
+| **`get_aws_overview`** | Dashboard view of entire AWS account (costs, security, resources) | ✅ Working |
 
 #### CloudWatch Tools
 | Tool | Description | Status |
@@ -367,6 +376,14 @@ result = agent.run("Why is my Lambda function failing?")
 | **`analyze_security_group`** | Analyze security group rules with risk assessment | ✅ Working |
 | **`find_overpermissive_security_groups`** | Scan all security groups for security risks | ✅ Working |
 
+#### EC2 Advanced Tools (4 tools)
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`analyze_ec2_performance`** | Deep performance analysis with CloudWatch metrics | ✅ Working |
+| **`analyze_auto_scaling_groups`** | Auto Scaling Group configuration and optimization | ✅ Working |
+| **`analyze_load_balancers`** | ALB/NLB/CLB analysis with health and cost insights | ✅ Working |
+| **`get_ec2_spot_recommendations`** | Spot Instance recommendations for cost savings | ✅ Working |
+
 #### S3 & Storage Tools
 | Tool | Description | Status |
 |------|-------------|--------|
@@ -376,7 +393,7 @@ result = agent.run("Why is my Lambda function failing?")
 | **`analyze_bucket_access`** | Access logging and CloudTrail integration status | ✅ Working |
 | **`find_unused_buckets`** | Identify empty or rarely used buckets | ✅ Working |
 
-#### S3 Advanced Optimization Tools (30-70% Storage Savings)
+#### S3 Advanced Optimization Tools (17 tools - 30-70% Storage Savings)
 | Tool | Description | Status |
 |------|-------------|--------|
 | **`analyze_s3_storage_classes`** | Storage class analysis and transition recommendations | ✅ Working |
@@ -386,6 +403,16 @@ result = agent.run("Why is my Lambda function failing?")
 | **`analyze_s3_replication`** | Replication configuration and costs | ✅ Working |
 | **`analyze_s3_request_costs`** | Request-based cost analysis | ✅ Working |
 | **`analyze_large_s3_objects`** | Find large objects needing optimization | ✅ Working |
+| **`analyze_s3_encryption`** | Audit bucket encryption (SSE-S3/KMS/DSSE) | ✅ Working |
+| **`analyze_s3_access_points`** | Access Points security and configuration | ✅ Working |
+| **`find_s3_compliance_issues`** | Object Lock, WORM compliance check | ✅ Working |
+| **`analyze_s3_inventory_configs`** | S3 Inventory configuration audit | ✅ Working |
+| **`find_s3_cross_account_access`** | Cross-account access detection | ✅ Working |
+| **`analyze_s3_event_notifications`** | Event notification audit | ✅ Working |
+| **`analyze_s3_intelligent_tiering`** | Intelligent-Tiering optimization | ✅ Working |
+| **`find_s3_permission_boundaries`** | Permission boundary analysis | ✅ Working |
+| **`analyze_s3_transfer_acceleration`** | Transfer Acceleration audit | ✅ Working |
+| **`get_s3_operational_metrics`** | Operational health dashboard | ✅ Working |
 
 #### RDS & Database Tools (NEW in v2.2.0)
 | Tool | Description | Status |
@@ -405,7 +432,7 @@ result = agent.run("Why is my Lambda function failing?")
 | **`analyze_vpc_endpoints`** | VPC endpoint analysis and cost savings | ✅ Working |
 | **`find_network_bottlenecks`** | Identify network performance bottlenecks | ✅ Working |
 
-#### Bedrock & AI/ML Tools (NEW in v2.3.0)
+#### Bedrock & AI/ML Tools (13 tools)
 | Tool | Description | Status |
 |------|-------------|--------|
 | **`analyze_bedrock_usage`** | Bedrock usage, costs, and model invocation metrics | ✅ Working |
@@ -414,6 +441,25 @@ result = agent.run("Why is my Lambda function failing?")
 | **`analyze_model_performance`** | Performance metrics (latency, errors, throttling) | ✅ Working |
 | **`compare_models`** | Compare models side-by-side for selection | ✅ Working |
 | **`get_model_invocation_logs`** | Recent model invocations for debugging | ✅ Working |
+| **`check_bedrock_quotas`** | Check Bedrock service quotas and limits | ✅ Working |
+| **`check_bedrock_security`** | Audit Bedrock security configuration | ✅ Working |
+| **`analyze_guardrails`** | Analyze Bedrock Guardrails configuration | ✅ Working |
+| **`analyze_model_latency`** | Detailed model latency analysis | ✅ Working |
+| **`compare_model_costs`** | Compare model costs for workloads | ✅ Working |
+| **`check_model_access`** | Audit model access permissions | ✅ Working |
+| **`get_bedrock_inventory`** | Complete Bedrock resource inventory | ✅ Working |
+
+#### Trusted Advisor-Style Checks (8 tools)
+| Tool | Description | Status |
+|------|-------------|--------|
+| **`check_cloudtrail_logging`** | Verify CloudTrail is enabled across all regions | ✅ Working |
+| **`check_vpc_flow_logs`** | Check VPC Flow Logs are enabled for all VPCs | ✅ Working |
+| **`check_config_status`** | Verify AWS Config is enabled and recording | ✅ Working |
+| **`check_certificate_expiration`** | Find expiring ACM and IAM certificates | ✅ Working |
+| **`check_lambda_runtimes`** | Identify Lambda functions with deprecated runtimes | ✅ Working |
+| **`check_stopped_ec2_instances`** | Find stopped EC2 instances wasting money | ✅ Working |
+| **`check_s3_incomplete_uploads`** | Find incomplete multipart uploads wasting storage | ✅ Working |
+| **`run_all_trusted_advisor_checks`** | Run all Trusted Advisor checks in one call | ✅ Working |
 
 ### Strands AI Agents (Powered by Claude)
 
@@ -1071,7 +1117,7 @@ dev_buckets = find_public_buckets(aws_client=dev_client)
 print(f"Dev public buckets: {dev_buckets['summary']['public_buckets']}")
 ```
 
-For complete standalone examples of all 78 tools, see the sections below and [QUICKSTART.md](QUICKSTART.md).
+For complete standalone examples of all 103 tools, see the sections below and [QUICKSTART.md](QUICKSTART.md).
 
 ---
 
@@ -1204,10 +1250,11 @@ strandkit/
 
 ## Development Status
 
-**Current Version:** 0.9.0
+**Current Version:** 2.7.0
 
 ✅ **Complete:**
-- AWS Client wrapper
+- AWS Client wrapper with multi-account/region support
+- **Orchestrator tools** - High-level composite tools for common agent tasks (4 tools)
 - **CloudWatch tools** - Logs, Metrics, Insights queries, error detection (4 tools)
 - **CloudFormation tools** - Changeset analysis with risk assessment (1 tool)
 - **IAM tools** - Role analysis, policy explanation, security scanning (3 tools)
@@ -1216,26 +1263,26 @@ strandkit/
 - **Cost Analytics tools** - RI/SP analysis, rightsizing, budgets, optimization (6 tools)
 - **Cost Waste Detection tools** - Zombie resources, idle detection, snapshot waste (5 tools)
 - **EC2 & Compute tools** - Instance analysis, security groups, resource optimization (5 tools)
+- **EC2 Advanced tools** - Performance analysis, auto-scaling, load balancers, spot (4 tools)
 - **S3 & Storage tools** - Bucket security, public access detection, cost optimization (5 tools)
+- **S3 Advanced Optimization tools** - Storage classes, lifecycle, encryption, compliance (17 tools)
 - **EBS & Volume Optimization tools** - GP2→GP3 migration, IOPS, snapshots, encryption (6 tools)
-- **S3 Advanced Optimization tools** - Storage classes, lifecycle, versioning, replication (7 tools)
 - **RDS & Database tools** - Instance analysis, idle detection, backups, security (5 tools)
 - **VPC & Networking tools** - NAT Gateways, VPC config, data transfer, endpoints (5 tools)
-- **Bedrock & AI/ML tools** - Model analysis, usage monitoring, cost optimization (6 tools)
+- **Bedrock & AI/ML tools** - Model analysis, usage, costs, security, guardrails (13 tools)
+- **Trusted Advisor tools** - CloudTrail, flow logs, config, certificates, Lambda runtimes (8 tools)
+- PyPI publication (`pip install strandkit`)
 - Comprehensive documentation and examples
-- **78 production-ready tools** tested with real AWS accounts
+- **103 production-ready tools** tested with real AWS accounts
 
 🚧 **In Progress:**
-- Agent framework (pending AWS Strands integration)
-- InfraDebuggerAgent implementation
-- CLI interface
+- Additional agent templates (SecurityAuditorAgent, CostOptimizerAgent)
+- CLI interface enhancements
 
 📋 **Planned:**
 - Lambda advanced tools (monitoring, performance, cost analysis)
 - DynamoDB tools (table analysis, capacity optimization)
 - Knowledge base tools (Bedrock knowledge bases, RAG optimization)
-- Additional agent templates
-- PyPI package publication
 - MCP server integration
 
 See [PROJECT_STATUS.md](PROJECT_STATUS.md) for detailed status.
@@ -1269,27 +1316,36 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Roadmap
 
 ### Phase 1: Core Tools ✅ (Complete)
-- ✅ AWS client wrapper
-- ✅ CloudWatch tools
-- ✅ CloudFormation tools
-- ✅ Documentation
+- ✅ AWS client wrapper with multi-account/region support
+- ✅ CloudWatch tools (4 tools)
+- ✅ CloudFormation tools (1 tool)
+- ✅ Comprehensive documentation
 
-### Phase 2: Agent Framework 🚧 (In Progress)
-- 🚧 BaseAgent implementation
-- 🚧 AWS Strands integration
-- 📋 InfraDebuggerAgent
+### Phase 2: Security & Cost Tools ✅ (Complete)
+- ✅ IAM security tools (11 tools)
+- ✅ Cost Explorer & analytics tools (15 tools)
+- ✅ EC2 & compute tools (9 tools)
+- ✅ S3 storage tools (22 tools)
 
-### Phase 3: Expansion 📋 (Planned)
-- 📋 IAM analyzer
-- 📋 Cost insights
-- 📋 Additional agents
-- 📋 CLI enhancements
+### Phase 3: Infrastructure Tools ✅ (Complete)
+- ✅ EBS & volume optimization (6 tools)
+- ✅ RDS database tools (5 tools)
+- ✅ VPC networking tools (5 tools)
+- ✅ Bedrock AI/ML tools (13 tools)
+- ✅ Trusted Advisor checks (8 tools)
+- ✅ Orchestrator tools (4 high-level tools)
 
-### Phase 4: Distribution 📋 (Future)
-- 📋 PyPI publication
-- 📋 Documentation website
-- 📋 Video tutorials
-- 📋 Community building
+### Phase 4: Distribution ✅ (Complete)
+- ✅ PyPI publication (`pip install strandkit`)
+- ✅ AWS Strands Agents integration
+- ✅ 103 production-ready tools
+
+### Phase 5: Expansion 📋 (Planned)
+- 📋 Lambda advanced tools
+- 📋 DynamoDB tools
+- 📋 Knowledge base tools (Bedrock RAG)
+- 📋 MCP server integration
+- 📋 Additional agent templates
 
 ## Support
 
