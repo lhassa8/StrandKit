@@ -17,7 +17,7 @@ Example usage:
 For more information, see: https://github.com/lhassa8/StrandKit
 """
 
-__version__ = "2.6.0"
+__version__ = "2.7.0"
 __author__ = "StrandKit Contributors"
 
 # Import main agent templates for easy access
@@ -185,6 +185,16 @@ __all__ = [
     "analyze_s3_replication",
     "analyze_s3_request_costs",
     "analyze_large_s3_objects",
+    "analyze_s3_encryption",
+    "analyze_s3_access_points",
+    "find_s3_compliance_issues",
+    "analyze_s3_inventory_configs",
+    "find_s3_cross_account_access",
+    "analyze_s3_event_notifications",
+    "analyze_s3_intelligent_tiering",
+    "find_s3_permission_boundaries",
+    "analyze_s3_transfer_acceleration",
+    "get_s3_operational_metrics",
     # EC2 Advanced tools
     "analyze_ec2_performance",
     "analyze_auto_scaling_groups",
@@ -238,7 +248,17 @@ from strandkit.tools.s3_advanced import (
     find_incomplete_multipart_uploads,
     analyze_s3_replication,
     analyze_s3_request_costs,
-    analyze_large_s3_objects
+    analyze_large_s3_objects,
+    analyze_s3_encryption,
+    analyze_s3_access_points,
+    find_s3_compliance_issues,
+    analyze_s3_inventory_configs,
+    find_s3_cross_account_access,
+    analyze_s3_event_notifications,
+    analyze_s3_intelligent_tiering,
+    find_s3_permission_boundaries,
+    analyze_s3_transfer_acceleration,
+    get_s3_operational_metrics
 )
 from strandkit.tools.ec2_advanced import (
     analyze_ec2_performance,

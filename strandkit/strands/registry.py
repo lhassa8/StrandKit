@@ -20,7 +20,7 @@ from typing import List, Any
 
 def get_all_tools() -> List[Any]:
     """
-    Get all 93 StrandKit tools as @tool-decorated functions.
+    Get all 103 StrandKit tools as @tool-decorated functions.
 
     Returns list of functions ready to pass to Strands Agent.
 
@@ -34,7 +34,7 @@ def get_all_tools() -> List[Any]:
         )
 
     Returns:
-        List of 93 @tool-decorated functions organized by category:
+        List of 103 @tool-decorated functions organized by category:
         - Orchestrators: 4 tools (high-level)
         - CloudWatch: 4 tools
         - CloudFormation: 1 tool
@@ -46,7 +46,7 @@ def get_all_tools() -> List[Any]:
         - EC2: 5 tools
         - EC2 Advanced: 4 tools
         - S3: 5 tools
-        - S3 Advanced: 7 tools
+        - S3 Advanced: 17 tools
         - EBS: 6 tools
         - RDS: 5 tools
         - VPC: 5 tools
@@ -143,7 +143,7 @@ def get_all_tools() -> List[Any]:
         s3.analyze_bucket_access,
         s3.find_unused_buckets,
 
-        # S3 Advanced (7 tools)
+        # S3 Advanced (17 tools)
         s3_advanced.analyze_s3_storage_classes,
         s3_advanced.analyze_s3_lifecycle_policies,
         s3_advanced.find_s3_versioning_waste,
@@ -151,6 +151,16 @@ def get_all_tools() -> List[Any]:
         s3_advanced.analyze_s3_replication,
         s3_advanced.analyze_s3_request_costs,
         s3_advanced.analyze_large_s3_objects,
+        s3_advanced.analyze_s3_encryption,
+        s3_advanced.analyze_s3_access_points,
+        s3_advanced.find_s3_compliance_issues,
+        s3_advanced.analyze_s3_inventory_configs,
+        s3_advanced.find_s3_cross_account_access,
+        s3_advanced.analyze_s3_event_notifications,
+        s3_advanced.analyze_s3_intelligent_tiering,
+        s3_advanced.find_s3_permission_boundaries,
+        s3_advanced.analyze_s3_transfer_acceleration,
+        s3_advanced.get_s3_operational_metrics,
 
         # EBS (6 tools)
         ebs.analyze_ebs_volumes,
@@ -218,7 +228,7 @@ def get_tools_by_category(category: str) -> List[Any]:
             - 'ec2': EC2 instance analysis (5 tools)
             - 'ec2_advanced': EC2 performance/scaling (4 tools)
             - 's3': S3 bucket analysis (5 tools)
-            - 's3_advanced': S3 optimization (7 tools)
+            - 's3_advanced': S3 optimization (17 tools)
             - 'ebs': EBS volume optimization (6 tools)
             - 'rds': RDS database analysis (5 tools)
             - 'vpc': VPC networking analysis (5 tools)
@@ -359,6 +369,16 @@ def get_tools_by_category(category: str) -> List[Any]:
             s3_advanced.analyze_s3_replication,
             s3_advanced.analyze_s3_request_costs,
             s3_advanced.analyze_large_s3_objects,
+            s3_advanced.analyze_s3_encryption,
+            s3_advanced.analyze_s3_access_points,
+            s3_advanced.find_s3_compliance_issues,
+            s3_advanced.analyze_s3_inventory_configs,
+            s3_advanced.find_s3_cross_account_access,
+            s3_advanced.analyze_s3_event_notifications,
+            s3_advanced.analyze_s3_intelligent_tiering,
+            s3_advanced.find_s3_permission_boundaries,
+            s3_advanced.analyze_s3_transfer_acceleration,
+            s3_advanced.get_s3_operational_metrics,
         ]
 
     elif category == 'ebs':
