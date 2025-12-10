@@ -20,7 +20,7 @@ from typing import List, Any
 
 def get_all_tools() -> List[Any]:
     """
-    Get all 91 StrandKit tools as @tool-decorated functions.
+    Get all 93 StrandKit tools as @tool-decorated functions.
 
     Returns list of functions ready to pass to Strands Agent.
 
@@ -34,7 +34,7 @@ def get_all_tools() -> List[Any]:
         )
 
     Returns:
-        List of 91 @tool-decorated functions organized by category:
+        List of 93 @tool-decorated functions organized by category:
         - Orchestrators: 4 tools (high-level)
         - CloudWatch: 4 tools
         - CloudFormation: 1 tool
@@ -50,7 +50,7 @@ def get_all_tools() -> List[Any]:
         - EBS: 6 tools
         - RDS: 5 tools
         - VPC: 5 tools
-        - Bedrock: 11 tools
+        - Bedrock: 13 tools
         - Trusted Advisor: 8 tools
     """
     # Import all tool modules
@@ -174,7 +174,7 @@ def get_all_tools() -> List[Any]:
         vpc.analyze_vpc_endpoints,
         vpc.find_network_bottlenecks,
 
-        # Bedrock (11 tools)
+        # Bedrock (13 tools)
         bedrock.analyze_bedrock_usage,
         bedrock.list_available_models,
         bedrock.get_model_details,
@@ -186,6 +186,8 @@ def get_all_tools() -> List[Any]:
         bedrock.analyze_guardrails,
         bedrock.analyze_model_latency,
         bedrock.compare_model_costs,
+        bedrock.check_model_access,
+        bedrock.get_bedrock_inventory,
 
         # Trusted Advisor (8 tools)
         trusted_advisor.check_cloudtrail_logging,
@@ -220,7 +222,7 @@ def get_tools_by_category(category: str) -> List[Any]:
             - 'ebs': EBS volume optimization (6 tools)
             - 'rds': RDS database analysis (5 tools)
             - 'vpc': VPC networking analysis (5 tools)
-            - 'bedrock': Bedrock AI/ML models (11 tools)
+            - 'bedrock': Bedrock AI/ML models (13 tools)
             - 'trusted_advisor': Trusted Advisor-style checks (8 tools)
 
     Returns:
@@ -404,6 +406,8 @@ def get_tools_by_category(category: str) -> List[Any]:
             bedrock.analyze_guardrails,
             bedrock.analyze_model_latency,
             bedrock.compare_model_costs,
+            bedrock.check_model_access,
+            bedrock.get_bedrock_inventory,
         ]
 
     elif category == 'trusted_advisor':

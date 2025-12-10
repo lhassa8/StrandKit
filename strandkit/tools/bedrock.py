@@ -2327,3 +2327,575 @@ def compare_model_costs(
             'error': str(e),
             'message': 'Failed to compare model costs'
         }
+
+
+@tool
+def check_model_access(
+    aws_client: Optional[AWSClient] = None
+) -> Dict[str, Any]:
+    """
+    Audit which Bedrock models are enabled and who can access them.
+
+    Provides comprehensive access analysis including:
+    - Models enabled/disabled in this account
+    - IAM roles and policies with Bedrock access
+    - Overpermissive policies (bedrock:*)
+    - Cross-account access grants
+
+    Args:
+        aws_client: Optional AWSClient for custom credentials/region
+
+    Returns:
+        Dict containing:
+        - enabled_models: Models enabled in this account
+        - disabled_models: Models not yet enabled
+        - iam_analysis: Roles with Bedrock permissions
+        - overpermissive_policies: Roles with bedrock:*
+        - findings: Security issues
+        - recommendations: Least-privilege suggestions
+
+    Example:
+        >>> access = check_model_access()
+        >>> print(f"Enabled models: {len(access['enabled_models'])}")
+        >>> for finding in access['findings']:
+        ...     print(f"[{finding['severity']}] {finding['title']}")
+    """
+    if aws_client is None:
+        aws_client = AWSClient()
+
+    try:
+        bedrock = aws_client.get_client('bedrock')
+        iam = aws_client.get_client('iam')
+
+        findings = []
+        recommendations = []
+
+        # Get all foundation models and their access status
+        enabled_models = []
+        disabled_models = []
+
+        try:
+            response = bedrock.list_foundation_models()
+            for model in response.get('modelSummaries', []):
+                model_info = {
+                    'model_id': model.get('modelId'),
+                    'model_name': model.get('modelName'),
+                    'provider': model.get('providerName'),
+                    'input_modalities': model.get('inputModalities', []),
+                    'output_modalities': model.get('outputModalities', []),
+                    'streaming_supported': model.get('responseStreamingSupported', False),
+                    'inference_types': model.get('inferenceTypesSupported', [])
+                }
+
+                # Check if model requires EULA acceptance or is available
+                lifecycle_status = model.get('modelLifecycle', {}).get('status', 'ACTIVE')
+                model_info['lifecycle_status'] = lifecycle_status
+
+                if lifecycle_status == 'ACTIVE':
+                    enabled_models.append(model_info)
+                else:
+                    disabled_models.append(model_info)
+
+        except Exception as e:
+            findings.append({
+                'severity': 'medium',
+                'category': 'access',
+                'title': 'Could not list foundation models',
+                'description': str(e),
+                'remediation': 'Ensure IAM permissions include bedrock:ListFoundationModels'
+            })
+
+        # Analyze IAM policies for Bedrock access
+        iam_analysis = {
+            'roles_with_bedrock_access': [],
+            'users_with_bedrock_access': [],
+            'overpermissive_policies': [],
+            'model_specific_policies': []
+        }
+
+        try:
+            # List all roles and check for Bedrock permissions
+            paginator = iam.get_paginator('list_roles')
+            for page in paginator.paginate():
+                for role in page.get('Roles', []):
+                    role_name = role.get('RoleName')
+
+                    # Skip AWS service-linked roles
+                    if role.get('Path', '').startswith('/aws-service-role/'):
+                        continue
+
+                    try:
+                        # Get attached policies
+                        attached_policies = iam.list_attached_role_policies(
+                            RoleName=role_name
+                        ).get('AttachedPolicies', [])
+
+                        # Get inline policies
+                        inline_policies = iam.list_role_policies(
+                            RoleName=role_name
+                        ).get('PolicyNames', [])
+
+                        has_bedrock_access = False
+                        is_overpermissive = False
+                        bedrock_actions = []
+
+                        # Check attached policies
+                        for policy in attached_policies:
+                            policy_arn = policy.get('PolicyArn')
+
+                            # Check for AWS managed Bedrock policies
+                            if 'Bedrock' in policy.get('PolicyName', ''):
+                                has_bedrock_access = True
+                                bedrock_actions.append(f"Attached: {policy.get('PolicyName')}")
+
+                                if 'FullAccess' in policy.get('PolicyName', ''):
+                                    is_overpermissive = True
+
+                        # Check inline policies for bedrock permissions
+                        for policy_name in inline_policies:
+                            try:
+                                policy_doc = iam.get_role_policy(
+                                    RoleName=role_name,
+                                    PolicyName=policy_name
+                                ).get('PolicyDocument', {})
+
+                                for statement in policy_doc.get('Statement', []):
+                                    if statement.get('Effect') != 'Allow':
+                                        continue
+
+                                    actions = statement.get('Action', [])
+                                    if isinstance(actions, str):
+                                        actions = [actions]
+
+                                    for action in actions:
+                                        if 'bedrock' in action.lower():
+                                            has_bedrock_access = True
+                                            bedrock_actions.append(f"Inline: {action}")
+
+                                            if action in ['bedrock:*', '*']:
+                                                is_overpermissive = True
+
+                            except Exception:
+                                continue
+
+                        if has_bedrock_access:
+                            role_info = {
+                                'role_name': role_name,
+                                'role_arn': role.get('Arn'),
+                                'bedrock_actions': bedrock_actions,
+                                'is_overpermissive': is_overpermissive
+                            }
+                            iam_analysis['roles_with_bedrock_access'].append(role_info)
+
+                            if is_overpermissive:
+                                iam_analysis['overpermissive_policies'].append(role_info)
+
+                    except Exception:
+                        continue
+
+        except Exception as e:
+            findings.append({
+                'severity': 'low',
+                'category': 'iam',
+                'title': 'Could not fully analyze IAM policies',
+                'description': str(e),
+                'remediation': 'Ensure IAM permissions to list and get role policies'
+            })
+
+        # Generate findings for overpermissive access
+        if iam_analysis['overpermissive_policies']:
+            count = len(iam_analysis['overpermissive_policies'])
+            findings.append({
+                'severity': 'high',
+                'category': 'iam',
+                'title': f'{count} role(s) have overpermissive Bedrock access',
+                'description': 'Roles with bedrock:* or BedrockFullAccess can invoke any model and modify configurations',
+                'remediation': 'Scope permissions to specific models using resource ARNs',
+                'affected_roles': [r['role_name'] for r in iam_analysis['overpermissive_policies'][:5]]
+            })
+
+            recommendations.append({
+                'priority': 'high',
+                'title': 'Implement least-privilege for Bedrock access',
+                'description': f'{count} roles have full Bedrock access. Scope to specific models.',
+                'action': 'Use resource-based conditions: arn:aws:bedrock:*:*:foundation-model/anthropic.claude-3-*',
+                'effort': 'medium',
+                'impact': 'high'
+            })
+
+        # Check for roles without Bedrock access that might need it
+        total_roles = len(iam_analysis['roles_with_bedrock_access'])
+        if total_roles == 0:
+            findings.append({
+                'severity': 'info',
+                'category': 'access',
+                'title': 'No IAM roles have Bedrock access',
+                'description': 'No roles found with Bedrock permissions. This may be expected for new accounts.',
+                'remediation': 'Create roles with appropriate Bedrock permissions for your use cases'
+            })
+
+        # Model access recommendations
+        if len(enabled_models) > 20:
+            recommendations.append({
+                'priority': 'medium',
+                'title': 'Many models enabled - consider access controls',
+                'description': f'{len(enabled_models)} models are enabled. Ensure users only access approved models.',
+                'action': 'Use IAM conditions to restrict InvokeModel to specific model ARNs',
+                'effort': 'low',
+                'impact': 'medium'
+            })
+
+        # Check for deprecated models in use
+        legacy_models = [m for m in enabled_models if 'v1' in m.get('model_id', '') and 'claude-2' in m.get('model_id', '').lower()]
+        if legacy_models:
+            recommendations.append({
+                'priority': 'low',
+                'title': 'Legacy models available',
+                'description': f'{len(legacy_models)} older model versions are enabled. Consider migrating to newer versions.',
+                'action': 'Migrate to Claude 3.x models for better performance',
+                'effort': 'medium',
+                'impact': 'medium'
+            })
+
+        # Summary
+        summary = {
+            'total_enabled_models': len(enabled_models),
+            'total_disabled_models': len(disabled_models),
+            'roles_with_access': len(iam_analysis['roles_with_bedrock_access']),
+            'overpermissive_roles': len(iam_analysis['overpermissive_policies']),
+            'findings_count': len([f for f in findings if f['severity'] != 'info']),
+            'status': 'needs_attention' if iam_analysis['overpermissive_policies'] else 'good'
+        }
+
+        # Group enabled models by provider
+        models_by_provider = {}
+        for model in enabled_models:
+            provider = model.get('provider', 'Unknown')
+            if provider not in models_by_provider:
+                models_by_provider[provider] = []
+            models_by_provider[provider].append(model['model_id'])
+
+        return {
+            'summary': summary,
+            'enabled_models': enabled_models,
+            'disabled_models': disabled_models[:10],  # Limit output
+            'models_by_provider': models_by_provider,
+            'iam_analysis': {
+                'roles_with_access': iam_analysis['roles_with_bedrock_access'][:20],
+                'overpermissive_roles': iam_analysis['overpermissive_policies'],
+                'total_roles_checked': len(iam_analysis['roles_with_bedrock_access'])
+            },
+            'findings': findings,
+            'recommendations': recommendations
+        }
+
+    except Exception as e:
+        return {
+            'error': str(e),
+            'message': 'Failed to check model access'
+        }
+
+
+@tool
+def get_bedrock_inventory(
+    aws_client: Optional[AWSClient] = None
+) -> Dict[str, Any]:
+    """
+    Get complete inventory of all Bedrock resources in the account.
+
+    Provides a comprehensive view of all Bedrock resources including:
+    - Foundation models (available and enabled)
+    - Custom/fine-tuned models
+    - Provisioned Throughput commitments
+    - Knowledge Bases
+    - Agents
+    - Guardrails
+
+    Args:
+        aws_client: Optional AWSClient for custom credentials/region
+
+    Returns:
+        Dict containing:
+        - summary: Resource counts and status
+        - foundation_models: Available models
+        - custom_models: Fine-tuned models
+        - provisioned_throughput: PT commitments
+        - knowledge_bases: RAG knowledge bases
+        - agents: Bedrock agents
+        - guardrails: Content filters
+        - estimated_monthly_cost: Based on active resources
+
+    Example:
+        >>> inventory = get_bedrock_inventory()
+        >>> print(f"Foundation models: {inventory['summary']['foundation_models']}")
+        >>> print(f"Custom models: {inventory['summary']['custom_models']}")
+        >>> print(f"Agents: {inventory['summary']['agents']}")
+    """
+    if aws_client is None:
+        aws_client = AWSClient()
+
+    try:
+        bedrock = aws_client.get_client('bedrock')
+        bedrock_agent = aws_client.get_client('bedrock-agent')
+
+        inventory = {
+            'foundation_models': [],
+            'custom_models': [],
+            'provisioned_throughput': [],
+            'knowledge_bases': [],
+            'agents': [],
+            'guardrails': [],
+            'model_copies': []
+        }
+
+        errors = []
+
+        # 1. Foundation Models
+        try:
+            response = bedrock.list_foundation_models()
+            for model in response.get('modelSummaries', []):
+                inventory['foundation_models'].append({
+                    'model_id': model.get('modelId'),
+                    'model_name': model.get('modelName'),
+                    'provider': model.get('providerName'),
+                    'input_modalities': model.get('inputModalities', []),
+                    'output_modalities': model.get('outputModalities', []),
+                    'streaming': model.get('responseStreamingSupported', False),
+                    'customization': model.get('customizationsSupported', []),
+                    'inference_types': model.get('inferenceTypesSupported', [])
+                })
+        except Exception as e:
+            errors.append(f"Foundation models: {str(e)}")
+
+        # Group by provider
+        models_by_provider = {}
+        for model in inventory['foundation_models']:
+            provider = model.get('provider', 'Unknown')
+            if provider not in models_by_provider:
+                models_by_provider[provider] = 0
+            models_by_provider[provider] += 1
+
+        # 2. Custom Models
+        try:
+            response = bedrock.list_custom_models()
+            for model in response.get('modelSummaries', []):
+                model_info = {
+                    'model_name': model.get('modelName'),
+                    'model_arn': model.get('modelArn'),
+                    'base_model': model.get('baseModelIdentifier'),
+                    'creation_time': model.get('creationTime').isoformat() if model.get('creationTime') else None
+                }
+
+                # Get additional details
+                try:
+                    details = bedrock.get_custom_model(modelIdentifier=model.get('modelArn'))
+                    model_info['job_arn'] = details.get('jobArn')
+                    model_info['training_data'] = details.get('trainingDataConfig', {}).get('s3Uri')
+                except Exception:
+                    pass
+
+                inventory['custom_models'].append(model_info)
+        except Exception as e:
+            errors.append(f"Custom models: {str(e)}")
+
+        # 3. Provisioned Throughput
+        try:
+            response = bedrock.list_provisioned_model_throughputs()
+            for pt in response.get('provisionedModelSummaries', []):
+                inventory['provisioned_throughput'].append({
+                    'name': pt.get('provisionedModelName'),
+                    'arn': pt.get('provisionedModelArn'),
+                    'model_arn': pt.get('modelArn'),
+                    'foundation_model': pt.get('foundationModelArn'),
+                    'model_units': pt.get('modelUnits'),
+                    'status': pt.get('status'),
+                    'commitment_duration': pt.get('commitmentDuration'),
+                    'creation_time': pt.get('creationTime').isoformat() if pt.get('creationTime') else None
+                })
+        except Exception as e:
+            errors.append(f"Provisioned throughput: {str(e)}")
+
+        # 4. Knowledge Bases
+        try:
+            response = bedrock_agent.list_knowledge_bases()
+            for kb in response.get('knowledgeBaseSummaries', []):
+                kb_info = {
+                    'knowledge_base_id': kb.get('knowledgeBaseId'),
+                    'name': kb.get('name'),
+                    'status': kb.get('status'),
+                    'updated_at': kb.get('updatedAt').isoformat() if kb.get('updatedAt') else None
+                }
+
+                # Get additional details
+                try:
+                    details = bedrock_agent.get_knowledge_base(
+                        knowledgeBaseId=kb.get('knowledgeBaseId')
+                    ).get('knowledgeBase', {})
+
+                    kb_info['description'] = details.get('description')
+                    kb_info['storage_type'] = details.get('storageConfiguration', {}).get('type')
+                    kb_info['embedding_model'] = details.get('knowledgeBaseConfiguration', {}).get(
+                        'vectorKnowledgeBaseConfiguration', {}
+                    ).get('embeddingModelArn')
+
+                    # Get data sources
+                    try:
+                        ds_response = bedrock_agent.list_data_sources(
+                            knowledgeBaseId=kb.get('knowledgeBaseId')
+                        )
+                        kb_info['data_sources'] = len(ds_response.get('dataSourceSummaries', []))
+                    except Exception:
+                        kb_info['data_sources'] = 'unknown'
+
+                except Exception:
+                    pass
+
+                inventory['knowledge_bases'].append(kb_info)
+        except Exception as e:
+            errors.append(f"Knowledge bases: {str(e)}")
+
+        # 5. Agents
+        try:
+            response = bedrock_agent.list_agents()
+            for agent in response.get('agentSummaries', []):
+                agent_info = {
+                    'agent_id': agent.get('agentId'),
+                    'agent_name': agent.get('agentName'),
+                    'status': agent.get('agentStatus'),
+                    'updated_at': agent.get('updatedAt').isoformat() if agent.get('updatedAt') else None
+                }
+
+                # Get additional details
+                try:
+                    details = bedrock_agent.get_agent(
+                        agentId=agent.get('agentId')
+                    ).get('agent', {})
+
+                    agent_info['description'] = details.get('description')
+                    agent_info['foundation_model'] = details.get('foundationModel')
+                    agent_info['idle_session_ttl'] = details.get('idleSessionTTLInSeconds')
+
+                    # Get action groups
+                    try:
+                        ag_response = bedrock_agent.list_agent_action_groups(
+                            agentId=agent.get('agentId'),
+                            agentVersion='DRAFT'
+                        )
+                        agent_info['action_groups'] = len(ag_response.get('actionGroupSummaries', []))
+                    except Exception:
+                        agent_info['action_groups'] = 'unknown'
+
+                    # Get knowledge bases linked
+                    try:
+                        kb_response = bedrock_agent.list_agent_knowledge_bases(
+                            agentId=agent.get('agentId'),
+                            agentVersion='DRAFT'
+                        )
+                        agent_info['knowledge_bases_linked'] = len(kb_response.get('agentKnowledgeBaseSummaries', []))
+                    except Exception:
+                        agent_info['knowledge_bases_linked'] = 'unknown'
+
+                except Exception:
+                    pass
+
+                inventory['agents'].append(agent_info)
+        except Exception as e:
+            errors.append(f"Agents: {str(e)}")
+
+        # 6. Guardrails
+        try:
+            response = bedrock.list_guardrails()
+            for guardrail in response.get('guardrails', []):
+                gr_info = {
+                    'guardrail_id': guardrail.get('id'),
+                    'name': guardrail.get('name'),
+                    'status': guardrail.get('status'),
+                    'version': guardrail.get('version'),
+                    'created_at': guardrail.get('createdAt').isoformat() if guardrail.get('createdAt') else None
+                }
+
+                # Get additional details
+                try:
+                    details = bedrock.get_guardrail(guardrailIdentifier=guardrail.get('id'))
+
+                    # Summarize filter types
+                    filters = []
+                    if details.get('contentPolicy'):
+                        filters.append('content')
+                    if details.get('topicPolicy'):
+                        filters.append('topics')
+                    if details.get('wordPolicy'):
+                        filters.append('words')
+                    if details.get('sensitiveInformationPolicy'):
+                        filters.append('pii')
+
+                    gr_info['filter_types'] = filters
+                    gr_info['description'] = details.get('description')
+
+                except Exception:
+                    pass
+
+                inventory['guardrails'].append(gr_info)
+        except Exception as e:
+            errors.append(f"Guardrails: {str(e)}")
+
+        # Estimate monthly costs (rough estimates)
+        estimated_costs = {
+            'provisioned_throughput': 0,
+            'knowledge_bases': 0,
+            'notes': []
+        }
+
+        # PT costs vary by model, use rough estimate
+        for pt in inventory['provisioned_throughput']:
+            if pt.get('status') == 'InService':
+                units = pt.get('model_units', 1)
+                # Rough estimate: $1000-5000/month per model unit depending on model
+                estimated_costs['provisioned_throughput'] += units * 2000
+                estimated_costs['notes'].append(f"PT '{pt.get('name')}': ~${units * 2000}/month (estimate)")
+
+        # Knowledge base costs
+        for kb in inventory['knowledge_bases']:
+            if kb.get('status') == 'ACTIVE':
+                # Rough estimate: OpenSearch Serverless + embedding costs
+                estimated_costs['knowledge_bases'] += 100
+                estimated_costs['notes'].append(f"KB '{kb.get('name')}': ~$100+/month (storage + queries)")
+
+        estimated_costs['total_estimated'] = (
+            estimated_costs['provisioned_throughput'] +
+            estimated_costs['knowledge_bases']
+        )
+
+        # Summary
+        summary = {
+            'foundation_models': len(inventory['foundation_models']),
+            'foundation_models_by_provider': models_by_provider,
+            'custom_models': len(inventory['custom_models']),
+            'provisioned_throughput': len(inventory['provisioned_throughput']),
+            'provisioned_throughput_active': len([pt for pt in inventory['provisioned_throughput'] if pt.get('status') == 'InService']),
+            'knowledge_bases': len(inventory['knowledge_bases']),
+            'knowledge_bases_active': len([kb for kb in inventory['knowledge_bases'] if kb.get('status') == 'ACTIVE']),
+            'agents': len(inventory['agents']),
+            'agents_prepared': len([a for a in inventory['agents'] if a.get('status') == 'PREPARED']),
+            'guardrails': len(inventory['guardrails']),
+            'guardrails_ready': len([g for g in inventory['guardrails'] if g.get('status') == 'READY']),
+            'errors_encountered': len(errors)
+        }
+
+        return {
+            'summary': summary,
+            'foundation_models': inventory['foundation_models'][:50],  # Limit output
+            'custom_models': inventory['custom_models'],
+            'provisioned_throughput': inventory['provisioned_throughput'],
+            'knowledge_bases': inventory['knowledge_bases'],
+            'agents': inventory['agents'],
+            'guardrails': inventory['guardrails'],
+            'estimated_monthly_cost': estimated_costs,
+            'errors': errors if errors else None
+        }
+
+    except Exception as e:
+        return {
+            'error': str(e),
+            'message': 'Failed to get Bedrock inventory'
+        }
