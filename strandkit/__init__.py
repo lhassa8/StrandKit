@@ -17,7 +17,7 @@ Example usage:
 For more information, see: https://github.com/lhassa8/StrandKit
 """
 
-__version__ = "2.4.0"
+__version__ = "2.5.0"
 __author__ = "StrandKit Contributors"
 
 # Import main agent templates for easy access
@@ -107,7 +107,12 @@ from strandkit.tools.bedrock import (
     get_model_details,
     analyze_model_performance,
     compare_models,
-    get_model_invocation_logs
+    get_model_invocation_logs,
+    check_bedrock_quotas,
+    check_bedrock_security,
+    analyze_guardrails,
+    analyze_model_latency,
+    compare_model_costs
 )
 
 __all__ = [
@@ -207,6 +212,11 @@ __all__ = [
     "analyze_model_performance",
     "compare_models",
     "get_model_invocation_logs",
+    "check_bedrock_quotas",
+    "check_bedrock_security",
+    "analyze_guardrails",
+    "analyze_model_latency",
+    "compare_model_costs",
     # Trusted Advisor-style checks
     "check_cloudtrail_logging",
     "check_vpc_flow_logs",
