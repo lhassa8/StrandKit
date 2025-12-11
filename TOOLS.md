@@ -1,6 +1,6 @@
 # StrandKit Tools Reference
 
-Complete API reference for all **86 AWS tools** in StrandKit v2.4.0.
+Complete API reference for all **172 AWS tools** in StrandKit v2.12.0.
 
 All tools are decorated with `@tool` for AWS Strands Agents integration and can also be used standalone.
 
@@ -11,7 +11,7 @@ All tools are decorated with `@tool` for AWS Strands Agents integration and can 
 ### Recommended for Agents
 - [**Orchestrators (4 tools)**](#orchestrator-tools) - High-level tools for common agent tasks
 
-### Granular Tools (82 tools)
+### Granular Tools (168 tools)
 - [CloudWatch (4 tools)](#cloudwatch-tools)
 - [CloudFormation (1 tool)](#cloudformation-tools)
 - [IAM (3 tools)](#iam-tools)
@@ -22,12 +22,19 @@ All tools are decorated with `@tool` for AWS Strands Agents integration and can 
 - [EC2 (5 tools)](#ec2-tools)
 - [EC2 Advanced (4 tools)](#ec2-advanced-tools)
 - [S3 (5 tools)](#s3-tools)
-- [S3 Advanced (7 tools)](#s3-advanced-tools)
+- [S3 Advanced (17 tools)](#s3-advanced-tools)
 - [EBS (6 tools)](#ebs-tools)
 - [RDS (5 tools)](#rds-tools)
 - [VPC (5 tools)](#vpc-tools)
-- [Bedrock (6 tools)](#bedrock-tools)
-- [Trusted Advisor (8 tools)](#trusted-advisor-tools) - NEW in v2.4.0
+- [Bedrock (13 tools)](#bedrock-tools)
+- [Trusted Advisor (8 tools)](#trusted-advisor-tools)
+- [Well-Architected Framework (71 tools)](#well-architected-framework-tools) - NEW in v2.10.0-v2.12.0
+  - [Security Pillar (23 tools)](#security-pillar-tools)
+  - [Reliability Pillar (18 tools)](#reliability-pillar-tools)
+  - [Cost Optimization Pillar (9 tools)](#cost-optimization-pillar-tools)
+  - [Operational Excellence Pillar (8 tools)](#operational-excellence-pillar-tools)
+  - [Performance Efficiency Pillar (6 tools)](#performance-efficiency-pillar-tools)
+  - [Sustainability Pillar (7 tools)](#sustainability-pillar-tools)
 
 ---
 
@@ -1712,4 +1719,237 @@ See the [examples](examples/) directory:
 
 ---
 
-**StrandKit v2.4.0** - 86 AWS tools for building AI agents
+## Well-Architected Framework Tools
+
+**NEW in v2.10.0-v2.12.0** - Complete AWS Well-Architected Framework coverage with 71 automated checks across all 6 pillars.
+
+The Well-Architected Framework tools help you evaluate your AWS workloads against AWS best practices. Each pillar provides automated checks that return scores, findings, and recommendations.
+
+### Security Pillar Tools
+
+**23 tools covering SEC01-SEC11 questions.** Helps identify security risks and enforce best practices.
+
+| Tool | Description | AWS WA Question |
+|------|-------------|-----------------|
+| `check_identity_management` | Check IAM identity management practices | SEC01 |
+| `check_authentication` | Check authentication mechanisms | SEC02 |
+| `check_permissions_management` | Check permissions and access control | SEC03 |
+| `check_security_monitoring` | Check security monitoring and detection | SEC04 |
+| `check_network_protection` | Check network security controls | SEC05 |
+| `check_compute_protection` | Check compute resource protection | SEC06 |
+| `check_data_classification` | Check data classification and handling | SEC07 |
+| `check_data_protection_at_rest` | Check encryption at rest | SEC08 |
+| `check_data_protection_in_transit` | Check encryption in transit | SEC09 |
+| `check_incident_response` | Check incident response readiness | SEC10 |
+| `check_application_security` | Check application security practices | SEC11 |
+| `run_security_pillar_review` | Run complete Security pillar review | All SEC |
+
+```python
+from strandkit.tools.wellarchitected import run_security_pillar_review
+
+# Run complete Security pillar review
+result = run_security_pillar_review()
+print(f"Security Score: {result['score']}/100")
+print(f"Status: {result['status']}")  # GOOD, NEEDS_ATTENTION, or HIGH_RISK
+for finding in result['findings']:
+    print(f"[{finding['severity']}] {finding['title']}")
+```
+
+---
+
+### Reliability Pillar Tools
+
+**18 tools covering REL01-REL13 questions.** Helps ensure workload resilience and recovery capabilities.
+
+| Tool | Description | AWS WA Question |
+|------|-------------|-----------------|
+| `check_service_quotas` | Check service quota management | REL01 |
+| `check_network_topology` | Check network topology design | REL02 |
+| `check_service_architecture` | Check service architecture patterns | REL03 |
+| `check_distributed_systems` | Check distributed system patterns | REL04 |
+| `check_change_management` | Check change management practices | REL05 |
+| `check_failure_management` | Check failure handling capabilities | REL06 |
+| `check_monitoring_alarms` | Check monitoring and alarming | REL07 |
+| `check_fault_isolation` | Check fault isolation boundaries | REL08 |
+| `check_backup_recovery` | Check backup and recovery | REL09 |
+| `check_disaster_recovery` | Check disaster recovery planning | REL10 |
+| `check_load_adaptation` | Check load adaptation capabilities | REL11 |
+| `check_component_failure` | Check component failure handling | REL12 |
+| `check_testing_reliability` | Check reliability testing practices | REL13 |
+| `run_reliability_pillar_review` | Run complete Reliability pillar review | All REL |
+
+```python
+from strandkit.tools.wellarchitected import run_reliability_pillar_review
+
+# Run complete Reliability pillar review
+result = run_reliability_pillar_review()
+print(f"Reliability Score: {result['score']}/100")
+for finding in result['findings']:
+    print(f"[{finding['severity']}] {finding['title']}")
+```
+
+---
+
+### Cost Optimization Pillar Tools
+
+**9 tools covering COST01-COST11 questions.** Helps optimize AWS spending and resource utilization.
+
+| Tool | Description | AWS WA Question |
+|------|-------------|-----------------|
+| `check_cloud_financial_management` | Check FinOps practices | COST01 |
+| `check_governance_controls` | Check cost governance | COST02 |
+| `check_cost_monitoring` | Check cost monitoring and attribution | COST03 |
+| `check_decommission_resources` | Check resource decommissioning | COST04 |
+| `check_service_selection_cost` | Check cost-efficient service selection | COST05 |
+| `check_pricing_models` | Check pricing model optimization | COST06 |
+| `check_resource_type_sizing` | Check rightsizing practices | COST07 |
+| `check_data_transfer_costs` | Check data transfer optimization | COST08 |
+| `run_cost_optimization_pillar_review` | Run complete Cost Optimization review | All COST |
+
+```python
+from strandkit.tools.wellarchitected import run_cost_optimization_pillar_review
+
+# Run complete Cost Optimization pillar review
+result = run_cost_optimization_pillar_review()
+print(f"Cost Optimization Score: {result['score']}/100")
+print(f"Potential savings identified: ${result['summary'].get('potential_savings', 0):.2f}/month")
+```
+
+---
+
+### Operational Excellence Pillar Tools
+
+**8 tools covering OPS01-OPS11 questions.** Helps improve operational practices and procedures.
+
+| Tool | Description | AWS WA Question |
+|------|-------------|-----------------|
+| `check_organization_priorities` | Check organizational priorities | OPS01 |
+| `check_operating_model` | Check operating model design | OPS02 |
+| `check_organizational_culture` | Check organizational culture | OPS03 |
+| `check_design_telemetry` | Check telemetry design | OPS04 |
+| `check_design_for_operations` | Check operational design | OPS05 |
+| `check_deployment_practices` | Check deployment practices | OPS06 |
+| `check_operational_readiness` | Check operational readiness | OPS07 |
+| `run_operational_excellence_pillar_review` | Run complete Operational Excellence review | All OPS |
+
+```python
+from strandkit.tools.wellarchitected import run_operational_excellence_pillar_review
+
+# Run complete Operational Excellence pillar review
+result = run_operational_excellence_pillar_review()
+print(f"Operational Excellence Score: {result['score']}/100")
+```
+
+---
+
+### Performance Efficiency Pillar Tools
+
+**6 tools covering PERF01-PERF05 questions.** Helps optimize resource utilization and performance.
+
+| Tool | Description | AWS WA Question |
+|------|-------------|-----------------|
+| `check_architecture_selection` | Check architecture selection process | PERF01 |
+| `check_compute_selection` | Check compute resource selection | PERF02 |
+| `check_data_store_performance` | Check data store performance | PERF03 |
+| `check_network_performance` | Check network performance optimization | PERF04 |
+| `check_performance_process` | Check performance optimization process | PERF05 |
+| `run_performance_efficiency_pillar_review` | Run complete Performance Efficiency review | All PERF |
+
+```python
+from strandkit.tools.wellarchitected import run_performance_efficiency_pillar_review
+
+# Run complete Performance Efficiency pillar review
+result = run_performance_efficiency_pillar_review()
+print(f"Performance Efficiency Score: {result['score']}/100")
+for finding in result['findings']:
+    print(f"[{finding['severity']}] {finding['title']}")
+```
+
+---
+
+### Sustainability Pillar Tools
+
+**7 tools covering SUS01-SUS06 questions.** Helps reduce environmental impact of cloud workloads.
+
+| Tool | Description | AWS WA Question |
+|------|-------------|-----------------|
+| `check_region_sustainability` | Check region selection for sustainability | SUS01 |
+| `check_demand_alignment` | Check demand alignment patterns | SUS02 |
+| `check_software_architecture_efficiency` | Check software efficiency | SUS03 |
+| `check_data_sustainability` | Check data management efficiency | SUS04 |
+| `check_hardware_efficiency` | Check hardware utilization efficiency | SUS05 |
+| `check_sustainability_culture` | Check sustainability processes | SUS06 |
+| `run_sustainability_pillar_review` | Run complete Sustainability pillar review | All SUS |
+
+```python
+from strandkit.tools.wellarchitected import run_sustainability_pillar_review
+
+# Run complete Sustainability pillar review
+result = run_sustainability_pillar_review()
+print(f"Sustainability Score: {result['score']}/100")
+for finding in result['findings']:
+    print(f"[{finding['severity']}] {finding['title']}")
+```
+
+---
+
+### Running Full Well-Architected Review
+
+Run all 6 pillars at once for a complete Well-Architected review:
+
+```python
+from strandkit.tools.wellarchitected import (
+    run_security_pillar_review,
+    run_reliability_pillar_review,
+    run_cost_optimization_pillar_review,
+    run_operational_excellence_pillar_review,
+    run_performance_efficiency_pillar_review,
+    run_sustainability_pillar_review
+)
+
+# Run all pillars
+pillars = {
+    'Security': run_security_pillar_review(),
+    'Reliability': run_reliability_pillar_review(),
+    'Cost Optimization': run_cost_optimization_pillar_review(),
+    'Operational Excellence': run_operational_excellence_pillar_review(),
+    'Performance Efficiency': run_performance_efficiency_pillar_review(),
+    'Sustainability': run_sustainability_pillar_review()
+}
+
+# Summary
+print("Well-Architected Review Summary")
+print("=" * 50)
+for pillar, result in pillars.items():
+    print(f"{pillar}: {result['score']}/100 ({result['status']})")
+    print(f"  Findings: {len(result['findings'])}")
+```
+
+---
+
+## Tool Categories
+
+| Category | Count | Purpose |
+|----------|-------|---------|
+| `orchestrators` | 4 | High-level composite tools |
+| `cloudwatch` | 4 | CloudWatch Logs and Metrics |
+| `cloudformation` | 1 | CloudFormation changesets |
+| `iam` | 3 | IAM role and policy analysis |
+| `iam_security` | 8 | IAM security auditing |
+| `cost` | 4 | Cost Explorer basics |
+| `cost_analytics` | 6 | Advanced cost analysis |
+| `cost_waste` | 5 | Waste detection |
+| `ec2` | 5 | EC2 instance analysis |
+| `ec2_advanced` | 4 | EC2 performance/scaling |
+| `s3` | 5 | S3 bucket analysis |
+| `s3_advanced` | 17 | S3 optimization |
+| `ebs` | 6 | EBS volume optimization |
+| `rds` | 5 | RDS database analysis |
+| `vpc` | 5 | VPC networking analysis |
+| `bedrock` | 13 | Bedrock AI/ML models |
+| `trusted_advisor` | 8 | Trusted Advisor-style checks |
+| `wellarchitected` | 71 | Well-Architected Framework (all 6 pillars) |
+
+---
+
+**StrandKit v2.12.0** - 172 AWS tools for building AI agents

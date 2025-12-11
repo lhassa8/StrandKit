@@ -22,7 +22,7 @@
 
 ## Overview
 
-StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.com/)** that provides **103 production-ready AWS tools** for:
+StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.com/)** that provides **172 production-ready AWS tools** for:
 
 - 💰 **Cost optimization** - Find waste, analyze spending, get rightsizing recommendations
 - 🔒 **Security auditing** - Scan IAM policies, detect misconfigurations, enforce compliance
@@ -32,9 +32,10 @@ StrandKit is a companion SDK for **[AWS Strands Agents](https://strandsagents.co
 
 **Perfect for AWS Strands Agents:**
 - **Orchestrator tools** - 4 high-level tools designed for common agent tasks (security audit, cost optimization, diagnostics)
-- **Drop-in ready** - All 103 tools work seamlessly with Strands agents via `get_all_tools()`
+- **Well-Architected Framework** - 71 automated checks covering all 6 pillars (Security, Reliability, Cost, Ops, Performance, Sustainability)
+- **Drop-in ready** - All 172 tools work seamlessly with Strands agents via `get_all_tools()`
 - **Auto-generated schemas** - Tool definitions automatically converted to Strands-compatible format
-- **Category organization** - Filter by orchestrators, IAM, EC2, S3, Cost, CloudWatch, Bedrock for specialized agents
+- **Category organization** - Filter by orchestrators, IAM, EC2, S3, Cost, CloudWatch, Bedrock, Well-Architected for specialized agents
 - **Production-tested** - All tools validated with real AWS accounts, handles edge cases gracefully
 - **Actionable insights** - Every tool provides recommendations, not just raw data
 
@@ -94,8 +95,9 @@ response = agent("Find ways to reduce my AWS bill")
 - ✅ **Orchestrator tools** - 4 high-level tools designed for common agent tasks
 - ✅ **@tool decorator** - Every function has Strands `@tool` decorator for instant integration
 - ✅ **Auto-schemas** - Tool schemas automatically generated for Strands agents
-- ✅ **Category filtering** - Load only the tools you need (orchestrators, IAM, Cost, EC2, S3, RDS, VPC, Bedrock, Trusted Advisor, etc.)
-- ✅ **Production-ready** - All 103 tools tested with real AWS accounts
+- ✅ **Category filtering** - Load only the tools you need (orchestrators, IAM, Cost, EC2, S3, RDS, VPC, Bedrock, Well-Architected, etc.)
+- ✅ **Well-Architected Framework** - 71 automated checks covering all 6 pillars
+- ✅ **Production-ready** - All 172 tools tested with real AWS accounts
 - ✅ **Actionable output** - Every tool returns recommendations, not just raw data
 - ✅ **Standalone compatible** - Also works without Strands for scripting
 
@@ -128,7 +130,7 @@ response = agent("Find cost savings")
 - ✅ **Clear purpose** - 4 tools vs 60 reduces agent confusion
 - ✅ **Better results** - Designed for what agents actually need to do
 - ✅ **Comprehensive** - Each orchestrator uses multiple granular tools
-- ✅ **Scales with complexity** - 103 tools organized by orchestrators that hide complexity
+- ✅ **Scales with complexity** - 172 tools organized by orchestrators that hide complexity
 
 **The 4 Orchestrator Tools:**
 1. `audit_security()` - Comprehensive security audit (IAM, S3, EC2)
@@ -138,9 +140,9 @@ response = agent("Find cost savings")
 
 ---
 
-**Using all 99 granular tools (advanced):**
+**Using all 168 granular tools (advanced):**
 
-Use StrandKit's 99 granular tools when you need fine-grained control:
+Use StrandKit's 168 granular tools when you need fine-grained control:
 
 ```python
 from strands import Agent
@@ -149,7 +151,7 @@ from strandkit.strands import get_all_tools
 # Create agent with all granular tools
 agent = Agent(
     name="aws-analyst",
-    tools=get_all_tools(),  # 103 AWS tools ready to use
+    tools=get_all_tools(),  # 172 AWS tools ready to use
     model="anthropic.claude-haiku-4-5-20251001-v1:0"
 )
 
@@ -256,7 +258,7 @@ result = agent.run("Why is my Lambda function failing?")
 | Feature | AWS Strands Agents | StrandKit Adds |
 |---------|-------------------|----------------|
 | **Agent Framework** | ✅ Multi-agent orchestration | N/A (uses Strands) |
-| **AWS Tools** | ❌ You write them | ✅ 103 production-ready tools |
+| **AWS Tools** | ❌ You write them | ✅ 172 production-ready tools |
 | **Tool Schemas** | ✅ Tool definition format | ✅ Auto-generated for all tools |
 | **IAM Security** | ❌ Build yourself | ✅ 11 security audit tools |
 | **Cost Optimization** | ❌ Build yourself | ✅ 15 cost analysis tools |
@@ -264,6 +266,7 @@ result = agent.run("Why is my Lambda function failing?")
 | **S3 Management** | ❌ Build yourself | ✅ 22 storage tools |
 | **Bedrock AI/ML** | ❌ Build yourself | ✅ 13 AI/ML tools |
 | **CloudWatch** | ❌ Build yourself | ✅ 4 monitoring tools |
+| **Well-Architected** | ❌ Build yourself | ✅ 71 framework checks |
 
 **StrandKit = AWS tools for Strands**
 
@@ -1117,7 +1120,7 @@ dev_buckets = find_public_buckets(aws_client=dev_client)
 print(f"Dev public buckets: {dev_buckets['summary']['public_buckets']}")
 ```
 
-For complete standalone examples of all 103 tools, see the sections below and [QUICKSTART.md](QUICKSTART.md).
+For complete standalone examples of all 172 tools, see the sections below and [QUICKSTART.md](QUICKSTART.md).
 
 ---
 
@@ -1250,7 +1253,7 @@ strandkit/
 
 ## Development Status
 
-**Current Version:** 2.7.0
+**Current Version:** 2.12.0
 
 ✅ **Complete:**
 - AWS Client wrapper with multi-account/region support
@@ -1271,9 +1274,16 @@ strandkit/
 - **VPC & Networking tools** - NAT Gateways, VPC config, data transfer, endpoints (5 tools)
 - **Bedrock & AI/ML tools** - Model analysis, usage, costs, security, guardrails (13 tools)
 - **Trusted Advisor tools** - CloudTrail, flow logs, config, certificates, Lambda runtimes (8 tools)
+- **Well-Architected Framework** - Complete coverage of all 6 pillars (71 tools):
+  - Security Pillar (23 tools) - SEC01-SEC11 checks
+  - Reliability Pillar (18 tools) - REL01-REL13 checks
+  - Cost Optimization Pillar (9 tools) - COST01-COST11 checks
+  - Operational Excellence Pillar (8 tools) - OPS01-OPS11 checks
+  - Performance Efficiency Pillar (6 tools) - PERF01-PERF05 checks
+  - Sustainability Pillar (7 tools) - SUS01-SUS06 checks
 - PyPI publication (`pip install strandkit`)
 - Comprehensive documentation and examples
-- **103 production-ready tools** tested with real AWS accounts
+- **172 production-ready tools** tested with real AWS accounts
 
 🚧 **In Progress:**
 - Additional agent templates (SecurityAuditorAgent, CostOptimizerAgent)
@@ -1340,7 +1350,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - ✅ AWS Strands Agents integration
 - ✅ 103 production-ready tools
 
-### Phase 5: Expansion 📋 (Planned)
+### Phase 5: Well-Architected Framework ✅ (Complete)
+- ✅ Security Pillar (23 tools) - SEC01-SEC11 checks
+- ✅ Reliability Pillar (18 tools) - REL01-REL13 checks
+- ✅ Cost Optimization Pillar (9 tools) - COST01-COST11 checks
+- ✅ Operational Excellence Pillar (8 tools) - OPS01-OPS11 checks
+- ✅ Performance Efficiency Pillar (6 tools) - PERF01-PERF05 checks
+- ✅ Sustainability Pillar (7 tools) - SUS01-SUS06 checks
+- ✅ 172 production-ready tools
+
+### Phase 6: Expansion 📋 (Planned)
 - 📋 Lambda advanced tools
 - 📋 DynamoDB tools
 - 📋 Knowledge base tools (Bedrock RAG)
