@@ -443,6 +443,40 @@ def get_tools_by_category(category: str) -> List[Any]:
             trusted_advisor.run_all_trusted_advisor_checks,
         ]
 
+    elif category == 'wellarchitected':
+        from strandkit.tools.wellarchitected import security, reliability
+        return [
+            # Security Pillar (15 tools)
+            security.check_root_account_usage,
+            security.check_identity_federation,
+            security.check_secrets_management,
+            security.check_encryption_at_rest,
+            security.check_encryption_in_transit,
+            security.check_network_protection,
+            security.check_compute_protection,
+            security.check_data_classification,
+            security.check_incident_response,
+            security.check_detective_controls,
+            security.check_infrastructure_protection,
+            security.check_aws_account_security,
+            security.check_api_security,
+            security.check_database_security,
+            security.run_security_pillar_review,
+            # Reliability Pillar (12 tools)
+            reliability.check_service_quotas,
+            reliability.check_network_topology,
+            reliability.check_backup_strategy,
+            reliability.check_disaster_recovery,
+            reliability.check_fault_isolation,
+            reliability.check_auto_scaling_config,
+            reliability.check_load_balancer_health,
+            reliability.check_monitoring_alerting,
+            reliability.check_distributed_system_design,
+            reliability.check_change_management,
+            reliability.check_database_reliability,
+            reliability.run_reliability_pillar_review,
+        ]
+
     else:
         return []
 
@@ -478,4 +512,5 @@ def list_tool_categories() -> List[str]:
         'vpc',
         'bedrock',
         'trusted_advisor',
+        'wellarchitected',
     ]
