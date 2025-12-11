@@ -10,7 +10,8 @@ AWS Well-Architected Framework (2025 edition):
    - REL01-REL13: Complete coverage of all reliability questions
 3. Cost Optimization - Avoid unnecessary costs (9 tools)
    - COST01-COST11: Financial management, governance, monitoring, rightsizing
-4. Operational Excellence - Run and monitor systems (coming soon)
+4. Operational Excellence - Run and monitor systems (8 tools)
+   - OPS04-OPS11: Observability, deployment, operations, improvement
 5. Performance Efficiency - Use resources efficiently (coming soon)
 6. Sustainability - Minimize environmental impact (coming soon)
 
@@ -122,6 +123,26 @@ from strandkit.tools.wellarchitected.cost_optimization import (
     run_cost_optimization_pillar_review,
 )
 
+# Operational Excellence Pillar Tools (8 tools)
+from strandkit.tools.wellarchitected.operational_excellence import (
+    # OPS04 - Observability Implementation
+    check_observability_implementation,
+    # OPS05 - Deployment Practices
+    check_deployment_practices,
+    # OPS06 - Deployment Safety
+    check_deployment_safety,
+    # OPS07 - Operational Readiness
+    check_operational_readiness,
+    # OPS08 - Observability Utilization
+    check_observability_utilization,
+    # OPS10 - Event Management
+    check_event_management,
+    # OPS11 - Continuous Improvement
+    check_continuous_improvement,
+    # Pillar Review
+    run_operational_excellence_pillar_review,
+)
+
 __all__ = [
     # Security Pillar - Core (15 tools)
     "check_root_account_usage",
@@ -178,4 +199,13 @@ __all__ = [
     "check_data_transfer_optimization",
     "check_demand_supply_management",
     "run_cost_optimization_pillar_review",
+    # Operational Excellence Pillar (8 tools)
+    "check_observability_implementation",
+    "check_deployment_practices",
+    "check_deployment_safety",
+    "check_operational_readiness",
+    "check_observability_utilization",
+    "check_event_management",
+    "check_continuous_improvement",
+    "run_operational_excellence_pillar_review",
 ]

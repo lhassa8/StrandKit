@@ -447,7 +447,7 @@ def get_tools_by_category(category: str) -> List[Any]:
         from strandkit.tools.wellarchitected import (
             security, reliability,
             security_extended, reliability_extended,
-            cost_optimization
+            cost_optimization, operational_excellence
         )
         return [
             # Security Pillar - Core (15 tools)
@@ -505,6 +505,15 @@ def get_tools_by_category(category: str) -> List[Any]:
             cost_optimization.check_data_transfer_optimization,
             cost_optimization.check_demand_supply_management,
             cost_optimization.run_cost_optimization_pillar_review,
+            # Operational Excellence Pillar (8 tools)
+            operational_excellence.check_observability_implementation,
+            operational_excellence.check_deployment_practices,
+            operational_excellence.check_deployment_safety,
+            operational_excellence.check_operational_readiness,
+            operational_excellence.check_observability_utilization,
+            operational_excellence.check_event_management,
+            operational_excellence.check_continuous_improvement,
+            operational_excellence.run_operational_excellence_pillar_review,
         ]
 
     else:
