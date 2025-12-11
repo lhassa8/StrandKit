@@ -446,7 +446,8 @@ def get_tools_by_category(category: str) -> List[Any]:
     elif category == 'wellarchitected':
         from strandkit.tools.wellarchitected import (
             security, reliability,
-            security_extended, reliability_extended
+            security_extended, reliability_extended,
+            cost_optimization
         )
         return [
             # Security Pillar - Core (15 tools)
@@ -494,6 +495,16 @@ def get_tools_by_category(category: str) -> List[Any]:
             reliability_extended.check_availability_design,
             reliability_extended.check_reliability_testing,
             reliability_extended.check_runbooks_playbooks,
+            # Cost Optimization Pillar (9 tools)
+            cost_optimization.check_cloud_financial_management,
+            cost_optimization.check_cost_governance,
+            cost_optimization.check_cost_monitoring,
+            cost_optimization.check_resource_decommissioning,
+            cost_optimization.check_resource_rightsizing,
+            cost_optimization.check_pricing_models,
+            cost_optimization.check_data_transfer_optimization,
+            cost_optimization.check_demand_supply_management,
+            cost_optimization.run_cost_optimization_pillar_review,
         ]
 
     else:

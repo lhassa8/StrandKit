@@ -8,7 +8,8 @@ AWS Well-Architected Framework (2025 edition):
    - SEC01-SEC10: Complete coverage of all security questions
 2. Reliability - Recover from failures, meet demand (18 tools)
    - REL01-REL13: Complete coverage of all reliability questions
-3. Cost Optimization - Avoid unnecessary costs (coming soon)
+3. Cost Optimization - Avoid unnecessary costs (9 tools)
+   - COST01-COST11: Financial management, governance, monitoring, rightsizing
 4. Operational Excellence - Run and monitor systems (coming soon)
 5. Performance Efficiency - Use resources efficiently (coming soon)
 6. Sustainability - Minimize environmental impact (coming soon)
@@ -99,6 +100,28 @@ from strandkit.tools.wellarchitected.reliability_extended import (
     check_runbooks_playbooks,
 )
 
+# Cost Optimization Pillar Tools (9 tools)
+from strandkit.tools.wellarchitected.cost_optimization import (
+    # COST01 - Cloud Financial Management
+    check_cloud_financial_management,
+    # COST02 - Governance
+    check_cost_governance,
+    # COST03 - Monitoring
+    check_cost_monitoring,
+    # COST04 - Decommissioning
+    check_resource_decommissioning,
+    # COST06 - Rightsizing
+    check_resource_rightsizing,
+    # COST07 - Pricing Models
+    check_pricing_models,
+    # COST08 - Data Transfer
+    check_data_transfer_optimization,
+    # COST09 - Demand/Supply
+    check_demand_supply_management,
+    # Pillar Review
+    run_cost_optimization_pillar_review,
+)
+
 __all__ = [
     # Security Pillar - Core (15 tools)
     "check_root_account_usage",
@@ -145,4 +168,14 @@ __all__ = [
     "check_availability_design",
     "check_reliability_testing",
     "check_runbooks_playbooks",
+    # Cost Optimization Pillar (9 tools)
+    "check_cloud_financial_management",
+    "check_cost_governance",
+    "check_cost_monitoring",
+    "check_resource_decommissioning",
+    "check_resource_rightsizing",
+    "check_pricing_models",
+    "check_data_transfer_optimization",
+    "check_demand_supply_management",
+    "run_cost_optimization_pillar_review",
 ]
