@@ -17,7 +17,7 @@ Example usage:
 For more information, see: https://github.com/lhassa8/StrandKit
 """
 
-__version__ = "2.11.0"
+__version__ = "2.12.0"
 __author__ = "StrandKit Contributors"
 
 # Import main agent templates for easy access

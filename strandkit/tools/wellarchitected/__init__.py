@@ -12,8 +12,10 @@ AWS Well-Architected Framework (2025 edition):
    - COST01-COST11: Financial management, governance, monitoring, rightsizing
 4. Operational Excellence - Run and monitor systems (8 tools)
    - OPS04-OPS11: Observability, deployment, operations, improvement
-5. Performance Efficiency - Use resources efficiently (coming soon)
-6. Sustainability - Minimize environmental impact (coming soon)
+5. Performance Efficiency - Use resources efficiently (5 tools)
+   - PERF01-PERF05: Architecture, compute, data, network, process
+6. Sustainability - Minimize environmental impact (6 tools)
+   - SUS01-SUS06: Region, demand, architecture, data, hardware, culture
 
 Each pillar module provides tools that map to specific Well-Architected
 Framework questions and best practices.
@@ -143,6 +145,40 @@ from strandkit.tools.wellarchitected.operational_excellence import (
     run_operational_excellence_pillar_review,
 )
 
+# Performance Efficiency Pillar Tools (5 tools)
+from strandkit.tools.wellarchitected.performance_efficiency import (
+    # PERF01 - Architecture Selection
+    check_architecture_selection,
+    # PERF02 - Compute Selection
+    check_compute_selection,
+    # PERF03 - Data Management
+    check_data_store_performance,
+    # PERF04 - Network Selection
+    check_network_performance,
+    # PERF05 - Process and Culture
+    check_performance_process,
+    # Pillar Review
+    run_performance_efficiency_pillar_review,
+)
+
+# Sustainability Pillar Tools (6 tools)
+from strandkit.tools.wellarchitected.sustainability import (
+    # SUS01 - Region Selection
+    check_region_sustainability,
+    # SUS02 - Alignment to Demand
+    check_demand_alignment,
+    # SUS03 - Software and Architecture
+    check_software_architecture_efficiency,
+    # SUS04 - Data Management
+    check_data_sustainability,
+    # SUS05 - Hardware and Services
+    check_hardware_efficiency,
+    # SUS06 - Process and Culture
+    check_sustainability_culture,
+    # Pillar Review
+    run_sustainability_pillar_review,
+)
+
 __all__ = [
     # Security Pillar - Core (15 tools)
     "check_root_account_usage",
@@ -208,4 +244,19 @@ __all__ = [
     "check_event_management",
     "check_continuous_improvement",
     "run_operational_excellence_pillar_review",
+    # Performance Efficiency Pillar (5 tools)
+    "check_architecture_selection",
+    "check_compute_selection",
+    "check_data_store_performance",
+    "check_network_performance",
+    "check_performance_process",
+    "run_performance_efficiency_pillar_review",
+    # Sustainability Pillar (6 tools)
+    "check_region_sustainability",
+    "check_demand_alignment",
+    "check_software_architecture_efficiency",
+    "check_data_sustainability",
+    "check_hardware_efficiency",
+    "check_sustainability_culture",
+    "run_sustainability_pillar_review",
 ]

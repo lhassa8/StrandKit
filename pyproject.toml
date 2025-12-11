@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "strandkit"
-version = "2.11.0"
-description = "Companion SDK for AWS Strands Agents - 161 production-ready AWS tools with Well-Architected Framework automation"
+version = "2.12.0"
+description = "Companion SDK for AWS Strands Agents - 172 production-ready AWS tools with complete Well-Architected Framework coverage"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
