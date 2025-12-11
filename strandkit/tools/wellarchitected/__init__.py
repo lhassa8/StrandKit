@@ -2,10 +2,12 @@
 AWS Well-Architected Framework Tools for StrandKit.
 
 This module provides automated checks aligned with the 6 pillars of the
-AWS Well-Architected Framework:
+AWS Well-Architected Framework (2025 edition):
 
-1. Security - Protect data, systems, and assets (15 tools)
-2. Reliability - Recover from failures, meet demand (12 tools)
+1. Security - Protect data, systems, and assets (23 tools)
+   - SEC01-SEC10: Complete coverage of all security questions
+2. Reliability - Recover from failures, meet demand (18 tools)
+   - REL01-REL13: Complete coverage of all reliability questions
 3. Cost Optimization - Avoid unnecessary costs (coming soon)
 4. Operational Excellence - Run and monitor systems (coming soon)
 5. Performance Efficiency - Use resources efficiently (coming soon)
@@ -31,7 +33,7 @@ Usage standalone:
     print(f"Security Score: {results['score']}/100")
 """
 
-# Security Pillar Tools (15 tools)
+# Security Pillar Tools - Core (15 tools)
 from strandkit.tools.wellarchitected.security import (
     check_root_account_usage,
     check_identity_federation,
@@ -50,7 +52,23 @@ from strandkit.tools.wellarchitected.security import (
     run_security_pillar_review,
 )
 
-# Reliability Pillar Tools (12 tools)
+# Security Pillar Tools - Extended (8 tools)
+from strandkit.tools.wellarchitected.security_extended import (
+    # SEC02 - Authentication
+    check_mfa_compliance,
+    check_credential_rotation,
+    # SEC03 - Permissions
+    check_iam_access_analyzer,
+    check_permission_boundaries,
+    check_resource_policies,
+    # SEC06 - Vulnerability Management
+    check_vulnerability_management,
+    # SEC10 - Incident Response
+    check_incident_response_readiness,
+    check_forensic_capabilities,
+)
+
+# Reliability Pillar Tools - Core (12 tools)
 from strandkit.tools.wellarchitected.reliability import (
     check_service_quotas,
     check_network_topology,
@@ -66,8 +84,23 @@ from strandkit.tools.wellarchitected.reliability import (
     run_reliability_pillar_review,
 )
 
+# Reliability Pillar Tools - Extended (6 tools)
+from strandkit.tools.wellarchitected.reliability_extended import (
+    # REL03 - Workload Architecture
+    check_service_architecture,
+    # REL04 - Preventing Failures
+    check_failure_prevention,
+    # REL05 - Mitigating Failures
+    check_failure_mitigation,
+    # REL11 - Withstanding Failures
+    check_availability_design,
+    # REL12 - Testing Reliability
+    check_reliability_testing,
+    check_runbooks_playbooks,
+)
+
 __all__ = [
-    # Security Pillar (15 tools)
+    # Security Pillar - Core (15 tools)
     "check_root_account_usage",
     "check_identity_federation",
     "check_secrets_management",
@@ -83,7 +116,16 @@ __all__ = [
     "check_api_security",
     "check_database_security",
     "run_security_pillar_review",
-    # Reliability Pillar (12 tools)
+    # Security Pillar - Extended (8 tools)
+    "check_mfa_compliance",
+    "check_credential_rotation",
+    "check_iam_access_analyzer",
+    "check_permission_boundaries",
+    "check_resource_policies",
+    "check_vulnerability_management",
+    "check_incident_response_readiness",
+    "check_forensic_capabilities",
+    # Reliability Pillar - Core (12 tools)
     "check_service_quotas",
     "check_network_topology",
     "check_backup_strategy",
@@ -96,4 +138,11 @@ __all__ = [
     "check_change_management",
     "check_database_reliability",
     "run_reliability_pillar_review",
+    # Reliability Pillar - Extended (6 tools)
+    "check_service_architecture",
+    "check_failure_prevention",
+    "check_failure_mitigation",
+    "check_availability_design",
+    "check_reliability_testing",
+    "check_runbooks_playbooks",
 ]

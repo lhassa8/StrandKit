@@ -444,9 +444,12 @@ def get_tools_by_category(category: str) -> List[Any]:
         ]
 
     elif category == 'wellarchitected':
-        from strandkit.tools.wellarchitected import security, reliability
+        from strandkit.tools.wellarchitected import (
+            security, reliability,
+            security_extended, reliability_extended
+        )
         return [
-            # Security Pillar (15 tools)
+            # Security Pillar - Core (15 tools)
             security.check_root_account_usage,
             security.check_identity_federation,
             security.check_secrets_management,
@@ -462,7 +465,16 @@ def get_tools_by_category(category: str) -> List[Any]:
             security.check_api_security,
             security.check_database_security,
             security.run_security_pillar_review,
-            # Reliability Pillar (12 tools)
+            # Security Pillar - Extended (8 tools)
+            security_extended.check_mfa_compliance,
+            security_extended.check_credential_rotation,
+            security_extended.check_iam_access_analyzer,
+            security_extended.check_permission_boundaries,
+            security_extended.check_resource_policies,
+            security_extended.check_vulnerability_management,
+            security_extended.check_incident_response_readiness,
+            security_extended.check_forensic_capabilities,
+            # Reliability Pillar - Core (12 tools)
             reliability.check_service_quotas,
             reliability.check_network_topology,
             reliability.check_backup_strategy,
@@ -475,6 +487,13 @@ def get_tools_by_category(category: str) -> List[Any]:
             reliability.check_change_management,
             reliability.check_database_reliability,
             reliability.run_reliability_pillar_review,
+            # Reliability Pillar - Extended (6 tools)
+            reliability_extended.check_service_architecture,
+            reliability_extended.check_failure_prevention,
+            reliability_extended.check_failure_mitigation,
+            reliability_extended.check_availability_design,
+            reliability_extended.check_reliability_testing,
+            reliability_extended.check_runbooks_playbooks,
         ]
 
     else:
